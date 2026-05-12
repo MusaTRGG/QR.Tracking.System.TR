@@ -1,2 +1,1 @@
-# QR.Tracking.System.TR
-.
+# QR_Object_Tracking_Project
