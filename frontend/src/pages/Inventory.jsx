@@ -24,7 +24,7 @@ export default function Inventory() {
   const [deviceLocation, setDeviceLocation] = useState('');
   const [deviceStatus, setDeviceStatus] = useState('Operasyonel');
   const [deviceEfficiency, setDeviceEfficiency] = useState(100);
-  const [deviceImage, setDeviceImage] = useState('/plc_1.jpeg');
+  const [deviceImage, setDeviceImage] = useState('');
   const [deviceSpecs, setDeviceSpecs] = useState('');
 
   const fetchLabsAndDevices = async () => {
@@ -40,6 +40,8 @@ export default function Inventory() {
         currentDevices = await devicesRes.json();
         setLabs(currentLabs);
         setDevices(currentDevices);
+        localStorage.setItem('qr-laboratories', JSON.stringify(currentLabs));
+        localStorage.setItem('qr-devices', JSON.stringify(currentDevices));
         if (currentLabs.length > 0) {
           setDeviceLocation(currentLabs[0]);
         }
@@ -78,19 +80,19 @@ export default function Inventory() {
   useEffect(() => {
     if (deviceTemplate === 'plc-1200') {
       setDeviceName('Siemens S7-1200 CPU 1214C');
-      setDeviceImage('/plc_1.jpeg');
+      setDeviceImage('');
       setDeviceSpecs('14 Dijital Giriş (24V DC), 10 Dijital Çıkış (Röle), 2 Analog Giriş (0-10V DC), Entegre Profinet Portu, 100 KB çalışma belleği.');
     } else if (deviceTemplate === 'plc-1500') {
       setDeviceName('Siemens S7-1500 CPU 1511-1 PN');
-      setDeviceImage('/plc_2.jpeg');
+      setDeviceImage('');
       setDeviceSpecs('Ekranlı CPU, 150 KB program belleği, 1 MB veri belleği, 2 portlu switch içeren Profinet arayüzü, 60 ns bit işlem hızı.');
     } else if (deviceTemplate === 'schneider-m221') {
       setDeviceName('Schneider Modicon M221 TM221CE16R');
-      setDeviceImage('/plc_3.jpeg');
+      setDeviceImage('');
       setDeviceSpecs('9 Dijital Giriş, 7 Röle Çıkışı, 2 Analog Giriş, Ethernet portu, USB mini-B programlama portu, SD kart yuvası.');
     } else if (deviceTemplate === 'custom') {
       setDeviceName('');
-      setDeviceImage('/plc_1.jpeg');
+      setDeviceImage('');
       setDeviceSpecs('');
     }
   }, [deviceTemplate]);
@@ -126,6 +128,17 @@ export default function Inventory() {
     setSearchLocation('Tüm Lablar');
     setSearchStatus('Herkes');
     setCurrentPage(1);
+  };
+
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setDeviceImage(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   const handleAddDevice = async (e) => {
@@ -187,6 +200,7 @@ export default function Inventory() {
     setDeviceStatus('Operasyonel');
     setDeviceEfficiency(100);
     setDeviceSpecs('');
+    setDeviceImage('');
     setAddModalOpen(false);
     alert('Cihaz başarıyla envantere eklendi.');
   };
@@ -283,7 +297,13 @@ export default function Inventory() {
               {currentDevices.map((device, idx) => (
                 <tr key={idx} className="hover:bg-surface-container-low/50 transition-colors group">
                   <td className="px-lg py-sm">
-                    <img className="w-12 h-12 object-contain rounded-lg border border-outline-variant bg-white" alt={device.name} src={device.image || '/plc_1.jpeg'} />
+                    {device.image ? (
+                      <img className="w-12 h-12 object-contain rounded-lg border border-outline-variant bg-white" alt={device.name} src={device.image} />
+                    ) : (
+                      <div className="w-12 h-12 flex items-center justify-center rounded-lg border border-outline-variant bg-surface-container-high text-on-surface-variant">
+                        <span className="material-symbols-outlined text-[24px]">developer_board</span>
+                      </div>
+                    )}
                   </td>
                   <td className="px-lg py-md max-w-[250px]">
                     <div className="font-label-md text-label-md text-on-surface truncate">{device.name}</div>
@@ -445,16 +465,26 @@ export default function Inventory() {
                   </select>
                 </div>
                 <div>
-                  <label className="block font-label-sm text-on-surface-variant mb-xs">Görsel Seçimi</label>
-                  <select 
-                    value={deviceImage}
-                    onChange={(e) => setDeviceImage(e.target.value)}
-                    className="w-full p-sm border border-outline-variant rounded-lg bg-surface focus:ring-2 focus:ring-primary outline-none text-body-md text-on-surface"
-                  >
-                    <option value="/plc_1.jpeg">Görsel 1 (Siemens S7-1200)</option>
-                    <option value="/plc_2.jpeg">Görsel 2 (Siemens S7-1500)</option>
-                    <option value="/plc_3.jpeg">Görsel 3 (Schneider Modicon)</option>
-                  </select>
+                  <label className="block font-label-sm text-on-surface-variant mb-xs">Cihaz Görseli</label>
+                  <div className="flex items-center gap-sm">
+                    {deviceImage ? (
+                      <img src={deviceImage} alt="Önizleme" className="w-10 h-10 object-contain rounded border border-outline bg-white" />
+                    ) : (
+                      <div className="w-10 h-10 flex items-center justify-center rounded border border-outline bg-surface-container-low text-on-surface-variant">
+                        <span className="material-symbols-outlined text-[20px]">image</span>
+                      </div>
+                    )}
+                    <label className="cursor-pointer bg-surface border border-outline-variant hover:bg-surface-container-high text-on-surface px-sm py-[7px] rounded-lg font-label-md text-label-md transition-colors flex items-center gap-xs">
+                      <span className="material-symbols-outlined text-[18px]">upload</span>
+                      Görsel Seç
+                      <input 
+                        type="file" 
+                        accept="image/*" 
+                        onChange={handleImageChange} 
+                        className="hidden" 
+                      />
+                    </label>
+                  </div>
                 </div>
               </div>
 

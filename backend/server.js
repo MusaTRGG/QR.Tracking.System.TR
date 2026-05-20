@@ -8,7 +8,8 @@ const PORT = process.env.PORT || 5000;
 const DB_PATH = path.join(__dirname, 'data', 'db.json');
 
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // Helper functions to read/write JSON file database
 function readDB() {
@@ -136,6 +137,26 @@ app.post('/api/devices/:id/logs', (req, res) => {
   
   writeDB(db);
   res.json(db.devices[index]);
+});
+
+// 3. Delete All Devices Endpoint
+app.delete('/api/devices', (req, res) => {
+  const db = readDB();
+  db.devices = [];
+  writeDB(db);
+  res.json({ message: "Tüm cihazlar başarıyla silindi." });
+});
+
+// 4. Delete Device Endpoint
+app.delete('/api/devices/:id', (req, res) => {
+  const db = readDB();
+  const exists = db.devices.some(d => d.id === req.params.id);
+  if (!exists) {
+    return res.status(404).json({ error: "Cihaz bulunamadı." });
+  }
+  db.devices = db.devices.filter(d => d.id !== req.params.id);
+  writeDB(db);
+  res.json({ message: "Cihaz başarıyla silindi." });
 });
 
 app.listen(PORT, () => {

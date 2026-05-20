@@ -16,6 +16,7 @@ export default function DeviceDashboard() {
   const [editSerial, setEditSerial] = useState('');
   const [editLocation, setEditLocation] = useState('');
   const [editSpecs, setEditSpecs] = useState('');
+  const [editImage, setEditImage] = useState('');
 
   // Hızlı İşlemler Form State
   const [issueType, setIssueType] = useState('Donanımsal Hata');
@@ -36,6 +37,18 @@ export default function DeviceDashboard() {
         setEditSerial(data.serial || '');
         setEditLocation(data.location || '');
         setEditSpecs(data.specs || '');
+        setEditImage(data.image || '');
+        
+        // Sync back to localStorage
+        const saved = localStorage.getItem('qr-devices');
+        if (saved) {
+          const devices = JSON.parse(saved);
+          const foundIdx = devices.findIndex(d => d.id === id);
+          if (foundIdx !== -1) {
+            devices[foundIdx] = data;
+            localStorage.setItem('qr-devices', JSON.stringify(devices));
+          }
+        }
         return;
       }
     } catch (e) {
@@ -53,6 +66,7 @@ export default function DeviceDashboard() {
         setEditSerial(found.serial || '');
         setEditLocation(found.location || '');
         setEditSpecs(found.specs || '');
+        setEditImage(found.image || '');
       }
     }
   };
@@ -83,6 +97,7 @@ export default function DeviceDashboard() {
 
   const updateDevice = async (updatedFields, newLog) => {
     let success = false;
+    let finalDeviceState = null;
     try {
       let response;
       if (newLog) {
@@ -102,6 +117,7 @@ export default function DeviceDashboard() {
       if (response.ok) {
         const data = await response.json();
         setDevice(data);
+        finalDeviceState = data;
         success = true;
       }
     } catch (e) {
@@ -114,39 +130,43 @@ export default function DeviceDashboard() {
       const devices = JSON.parse(saved);
       const foundIdx = devices.findIndex(d => d.id === id);
       if (foundIdx !== -1) {
-        const currentDev = devices[foundIdx];
-        let updatedDev = { ...currentDev, ...updatedFields };
-        if (newLog) {
-          let updatedEfficiency = currentDev.efficiency;
-          let updatedStatus = currentDev.status;
-          let updatedLastMaintenance = currentDev.lastMaintenance;
-          
-          if (newLog.type === 'Arıza Bildirimi') {
-            updatedStatus = 'Arızalı';
-            updatedEfficiency = Math.floor(Math.random() * 20 + 30);
-          } else if (newLog.type === 'Bakım') {
-            updatedStatus = 'Operasyonel';
-            updatedEfficiency = 100;
-            updatedLastMaintenance = newLog.date.split(' ')[0] || new Date().toLocaleDateString('tr-TR');
-          } else if (newLog.type === 'Durum Güncelleme') {
-            updatedStatus = 'Operasyonel';
-            updatedEfficiency = 100;
+        if (success && finalDeviceState) {
+          devices[foundIdx] = finalDeviceState;
+        } else {
+          const currentDev = devices[foundIdx];
+          let updatedDev = { ...currentDev, ...updatedFields };
+          if (newLog) {
+            let updatedEfficiency = currentDev.efficiency;
+            let updatedStatus = currentDev.status;
+            let updatedLastMaintenance = currentDev.lastMaintenance;
+            
+            if (newLog.type === 'Arıza Bildirimi') {
+              updatedStatus = 'Arızalı';
+              updatedEfficiency = Math.floor(Math.random() * 20 + 30);
+            } else if (newLog.type === 'Bakım') {
+              updatedStatus = 'Operasyonel';
+              updatedEfficiency = 100;
+              updatedLastMaintenance = newLog.date.split(' ')[0] || new Date().toLocaleDateString('tr-TR');
+            } else if (newLog.type === 'Durum Güncelleme') {
+              updatedStatus = 'Operasyonel';
+              updatedEfficiency = 100;
+            }
+            
+            updatedDev = {
+              ...currentDev,
+              ...updatedFields,
+              status: updatedStatus,
+              efficiency: updatedEfficiency,
+              lastMaintenance: updatedLastMaintenance,
+              logs: [newLog, ...(currentDev.logs || [])]
+            };
           }
-          
-          updatedDev = {
-            ...currentDev,
-            status: updatedStatus,
-            efficiency: updatedEfficiency,
-            lastMaintenance: updatedLastMaintenance,
-            logs: [newLog, ...(currentDev.logs || [])]
-          };
+          devices[foundIdx] = updatedDev;
+          if (!success) {
+            setDevice(updatedDev);
+          }
         }
-        
-        devices[foundIdx] = updatedDev;
         localStorage.setItem('qr-devices', JSON.stringify(devices));
-        if (!success) {
-          setDevice(updatedDev);
-        }
       }
     }
   };
@@ -191,23 +211,63 @@ export default function DeviceDashboard() {
     alert('Bakım kaydı başarıyla oluşturuldu.');
   };
 
+  const handleEditImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setEditImage(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleEditSubmit = (e) => {
     e.preventDefault();
+    const newLog = {
+      date: new Date().toLocaleString('tr-TR'),
+      type: 'Bilgi Güncelleme',
+      description: 'Cihaz bilgileri ve görseli kullanıcı tarafından güncellendi.',
+      user: user?.name || 'Yönetici'
+    };
     const updatedFields = {
       name: editName,
       serial: editSerial,
       location: editLocation,
-      specs: editSpecs
+      specs: editSpecs,
+      image: editImage,
+      logs: [newLog, ...(device.logs || [])]
     };
-    const newLog = {
-      date: new Date().toLocaleString('tr-TR'),
-      type: 'Bilgi Güncelleme',
-      description: 'Cihaz bilgileri kullanıcı tarafından güncellendi.',
-      user: user?.name || 'Yönetici'
-    };
-    updateDevice(updatedFields, newLog);
+    updateDevice(updatedFields); // Note: Call without newLog to trigger a PUT update
     setEditModalOpen(false);
     alert('Cihaz bilgileri başarıyla güncellendi.');
+  };
+
+  const handleDeleteDevice = async () => {
+    if (window.confirm("Bu cihazı envanterden kalıcı olarak silmek istediğinize emin misiniz?")) {
+      let success = false;
+      try {
+        const response = await fetch(`/api/devices/${id}`, {
+          method: 'DELETE'
+        });
+        if (response.ok) {
+          success = true;
+        }
+      } catch (e) {
+        console.warn("Backend delete failed, sync to localStorage only", e);
+      }
+
+      // Sync with localStorage
+      const saved = localStorage.getItem('qr-devices');
+      if (saved) {
+        const devices = JSON.parse(saved);
+        const filtered = devices.filter(d => d.id !== id);
+        localStorage.setItem('qr-devices', JSON.stringify(filtered));
+      }
+
+      alert("Cihaz envanterden silindi.");
+      window.location.href = '/inventory';
+    }
   };
 
   // Filter logs based on active tab
@@ -229,6 +289,13 @@ export default function DeviceDashboard() {
             >
               <span className="material-symbols-outlined text-[24px]">edit</span>
             </button>
+            <button 
+              onClick={handleDeleteDevice}
+              className="text-on-surface-variant hover:text-error p-xs rounded-full hover:bg-surface-container-high transition-colors flex items-center justify-center"
+              title="Cihazı Sil"
+            >
+              <span className="material-symbols-outlined text-[24px]">delete</span>
+            </button>
           </div>
           <p className="font-body-md text-body-md text-on-surface-variant mt-1">ID: {device.id}</p>
         </div>
@@ -244,11 +311,18 @@ export default function DeviceDashboard() {
         {/* Product Photo Card */}
         <div className="col-span-12 lg:col-span-4 bg-surface-container-lowest border border-outline-variant rounded-xl p-lg flex flex-col items-center justify-center shadow-sm">
           <div className="w-full aspect-square relative mb-md bg-white rounded-lg flex items-center justify-center overflow-hidden border border-outline-variant">
-            <img 
-              className="object-contain max-h-[280px] w-full h-full" 
-              alt={device.name} 
-              src={device.image || "/plc_1.jpeg"} 
-            />
+            {device.image ? (
+              <img 
+                className="object-contain max-h-[280px] w-full h-full" 
+                alt={device.name} 
+                src={device.image} 
+              />
+            ) : (
+              <div className="flex flex-col items-center justify-center text-on-surface-variant gap-sm">
+                <span className="material-symbols-outlined text-[80px] opacity-40">developer_board</span>
+                <span className="font-label-md text-label-md">Görsel Eklenmemiş</span>
+              </div>
+            )}
           </div>
           <a href={dummyPdf} download={`${device.id}_dokuman.pdf`} className="w-full flex items-center justify-center gap-sm border border-primary text-primary hover:bg-primary-container/10 px-md py-sm rounded-lg font-label-md text-label-md transition-colors">
             <span className="material-symbols-outlined">download</span>
@@ -441,6 +515,37 @@ export default function DeviceDashboard() {
                           className="w-full p-sm border border-outline-variant rounded-lg bg-surface focus:ring-2 focus:ring-primary outline-none text-body-md text-on-surface"
                           placeholder="Örn: PLC Labı"
                         />
+                    </div>
+                    <div>
+                        <label className="block font-label-sm text-on-surface-variant mb-xs">Cihaz Görseli (Fotoğraf)</label>
+                        <div className="flex items-center gap-sm">
+                            {editImage ? (
+                                <img src={editImage} alt="Önizleme" className="w-12 h-12 object-contain rounded border border-outline bg-white" />
+                            ) : (
+                                <div className="w-12 h-12 flex items-center justify-center rounded border border-outline bg-surface-container-low text-on-surface-variant">
+                                    <span className="material-symbols-outlined text-[24px]">image</span>
+                                </div>
+                            )}
+                            <label className="cursor-pointer bg-surface border border-outline-variant hover:bg-surface-container-high text-on-surface px-sm py-[7px] rounded-lg font-label-md text-label-md transition-colors flex items-center gap-xs">
+                                <span className="material-symbols-outlined text-[18px]">upload</span>
+                                Görsel Yükle / Değiştir
+                                <input 
+                                  type="file" 
+                                  accept="image/*" 
+                                  onChange={handleEditImageChange} 
+                                  className="hidden" 
+                                />
+                            </label>
+                            {editImage && (
+                                <button 
+                                  type="button" 
+                                  onClick={() => setEditImage('')}
+                                  className="text-error hover:bg-error-container/10 px-sm py-xs rounded font-label-sm text-label-sm transition-colors"
+                                >
+                                  Görseli Kaldır
+                                </button>
+                            )}
+                        </div>
                     </div>
                     <div>
                         <label className="block font-label-sm text-on-surface-variant mb-xs">Teknik Özellikler</label>

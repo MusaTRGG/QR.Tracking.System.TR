@@ -5,35 +5,100 @@ import { QRCodeSVG } from 'qrcode.react';
 export default function Dashboard() {
   const [devices, setDevices] = useState([]);
   
-  useEffect(() => {
-    const saved = localStorage.getItem('qr-devices');
-    if (saved) {
-      setDevices(JSON.parse(saved));
+  const fetchDevices = async () => {
+    let success = false;
+    try {
+      const res = await fetch('/api/devices');
+      if (res.ok) {
+        const data = await res.json();
+        setDevices(data);
+        localStorage.setItem('qr-devices', JSON.stringify(data));
+        success = true;
+      }
+    } catch (e) {
+      console.warn("Backend connection failed, falling back to localStorage", e);
     }
+    
+    if (!success) {
+      const saved = localStorage.getItem('qr-devices');
+      if (saved) {
+        setDevices(JSON.parse(saved));
+      }
+    }
+  };
+
+  useEffect(() => {
+    fetchDevices();
   }, []);
 
-  const createDevice = () => {
+  const createDevice = async () => {
     const newId = `PLC-${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}`;
     const newDevice = {
       id: newId,
       name: `Siemens S7-1200 PLC`,
       serial: `SN-${Math.floor(Math.random() * 1000000)}`,
-      location: `Lab-0${Math.floor(Math.random() * 5 + 1)} / Panel ${String.fromCharCode(65 + Math.floor(Math.random() * 5))}`,
+      location: `PLC Labı`,
       status: 'Operasyonel',
       efficiency: Math.floor(Math.random() * 20 + 80), // 80-100
       lastMaintenance: new Date().toLocaleDateString('tr-TR'),
-      createdAt: new Date().getTime()
+      image: '',
+      specs: '14 Dijital Giriş (24V DC), 10 Dijital Çıkış (Röle), 2 Analog Giriş (0-10V DC), Entegre Profinet Portu, 100 KB çalışma belleği.',
+      manager: 'Ahmet Y.',
+      date: new Date().toLocaleDateString('tr-TR'),
+      logs: [
+        {
+          date: new Date().toLocaleString('tr-TR'),
+          type: 'Sistem',
+          description: 'Test cihazı otomatik olarak üretildi.',
+          user: 'Sistem'
+        }
+      ]
     };
     
-    const updated = [newDevice, ...devices];
-    setDevices(updated);
+    let success = false;
+    try {
+      const res = await fetch('/api/devices', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newDevice)
+      });
+      if (res.ok) {
+        const added = await res.json();
+        setDevices(prev => [added, ...prev]);
+        success = true;
+      }
+    } catch (e) {
+      console.warn("Backend test device creation failed, sync to localStorage only", e);
+    }
+    
+    const saved = localStorage.getItem('qr-devices');
+    const localDevs = saved ? JSON.parse(saved) : [];
+    const updated = [newDevice, ...localDevs];
     localStorage.setItem('qr-devices', JSON.stringify(updated));
+    if (!success) {
+      setDevices(updated);
+    }
   };
 
-  const clearDevices = () => {
-    setDevices([]);
-    localStorage.removeItem('qr-devices');
-  }
+  const clearDevices = async () => {
+    if (window.confirm("Tüm envanteri temizlemek istediğinize emin misiniz?")) {
+      let success = false;
+      try {
+        const res = await fetch('/api/devices', {
+          method: 'DELETE'
+        });
+        if (res.ok) {
+          setDevices([]);
+          success = true;
+        }
+      } catch (e) {
+        console.warn("Backend clear failed, sync to localStorage only", e);
+      }
+      
+      setDevices([]);
+      localStorage.removeItem('qr-devices');
+    }
+  };
 
   // Use the current local IP/hostname to generate QR
   const baseUrl = `${window.location.protocol}//${window.location.host}/device`;
