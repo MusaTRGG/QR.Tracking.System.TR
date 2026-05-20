@@ -18,6 +18,7 @@ export default function Layout() {
     { path: '/', icon: 'dashboard', label: 'Ana Sayfa' },
     { path: '/scanner', icon: 'qr_code_scanner', label: 'Tarayıcı' },
     { path: '/inventory', icon: 'inventory_2', label: 'Envanter' },
+    { path: '/laboratories', icon: 'science', label: 'Laboratuvar' },
     { path: '/reports', icon: 'assessment', label: 'Raporlar' },
     { path: '/notifications', icon: 'notifications', label: 'Bildirimler' },
     { path: '/settings', icon: 'settings', label: 'Ayarlar' },
@@ -86,7 +87,7 @@ export default function Layout() {
       <nav className="md:hidden fixed bottom-0 w-full flex justify-around items-center py-sm bg-surface border-t border-outline-variant z-50 shadow-lg">
         <Link to="/" className={`flex flex-col items-center justify-center ${location.pathname === '/' ? 'text-primary font-bold' : 'text-on-surface-variant hover:text-primary'}`}>
           <span className="material-symbols-outlined">dashboard</span>
-          <span className="font-label-sm text-label-sm">Ana Sayfa</span>
+          <span className="font-label-sm text-label-sm">Panel</span>
         </Link>
         <Link to="/scanner" className={`flex flex-col items-center justify-center ${location.pathname === '/scanner' ? 'text-primary font-bold' : 'text-on-surface-variant hover:text-primary'}`}>
           <span className="material-symbols-outlined">qr_code_scanner</span>
@@ -95,6 +96,10 @@ export default function Layout() {
         <Link to="/inventory" className={`flex flex-col items-center justify-center ${location.pathname === '/inventory' ? 'text-primary font-bold' : 'text-on-surface-variant hover:text-primary'}`}>
           <span className="material-symbols-outlined">inventory_2</span>
           <span className="font-label-sm text-label-sm">Envanter</span>
+        </Link>
+        <Link to="/laboratories" className={`flex flex-col items-center justify-center ${location.pathname === '/laboratories' ? 'text-primary font-bold' : 'text-on-surface-variant hover:text-primary'}`}>
+          <span className="material-symbols-outlined">science</span>
+          <span className="font-label-sm text-label-sm">Lab</span>
         </Link>
         <Link to="/profile" className={`flex flex-col items-center justify-center ${location.pathname === '/profile' ? 'text-primary font-bold' : 'text-on-surface-variant hover:text-primary'}`}>
           <span className="material-symbols-outlined">person</span>
