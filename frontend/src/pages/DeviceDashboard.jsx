@@ -28,7 +28,10 @@ export default function DeviceDashboard() {
   // Minimal dummy PDF base64
   const dummyPdf = "data:application/pdf;base64,JVBERi0xLjEKJcKlwrHDqwoKMSAwIG9iagogIDw8IC9UeXBlIC9DYXRhbG9nCiAgICAgL1BhZ2VzIDIgMCBSCiAgPj4KZW5kb2JqCgoyIDAgb2JqCiAgPDwgL1R5cGUgL1BhZ2VzCiAgICAgL0tpZHMgWzMgMCBSXQogICAgIC9Db3VudCAxCiAgICAgL01lZGlhQm94IFswIDAgMzAwIDE0UF0KICA+PgplbmRvYmoKCjMgMCBvYmoKICA8PCAgL1R5cGUgL1BhZ2UKICAgICAgL1BhcmVudCAyIDAgUgogICAgICAvUmVzb3VyY2VzCiAgICAgICA8PCAvRm9udAogICAgICAgICAgIDw8IC9GMQogICAgICAgICAgICAgICA8PCAvVHlwZSAvRm9udAogICAgICAgICAgICAgICAgICAvU3VidHlwZSAvVHlwZTEKICAgICAgICAgICAgICAgICAgL0Jhc2VGb250IC9UaW1lcy1Sb21hbgogICAgICAgICAgICAgICA+PgogICAgICAgICAgID4+CiAgICAgICA+PgogICAgICAvQ29udGVudHMgNCAwIFIKICA+PgplbmRvYmoKCjQgMCBvYmoKICA8PCAvTGVuZ3RoIDU1ID4+CnN0cmVhbQogIEJUCiAgICAvRjEgMTggVGYKICAgIDAgMCAwIHJnCiAgICAoVGVzdCBEb2N1bWVudCkgVGoKICBFVAplbmRzdHJlYW0KZW5kb2JqCgp4cmVmCjAgNQowMDAwMDAwMDAwIDY1NTM1IGYgCjAwMDAwMDAwMTggMDAwMDAgbiAKMDAwMDAwMDA3NyAwMDAwMCBuIAowMDAwMDAwMTgzIDAwMDAwIG4gCjAwMDAwMDA0NTcgMDAwMDAgbiAKdHJhaWxlcgogIDw8ICAvUm9vdCAxIDAgUgogICAgICAvU2l6ZSA1CiAgPj4Kc3RhcnR4cmVmCjU2NQolJUVPRgo=";
 
+  const [loading, setLoading] = useState(true);
+
   const fetchDevice = async () => {
+    setLoading(true);
     let success = false;
     let data = null;
 
@@ -68,6 +71,7 @@ export default function DeviceDashboard() {
           localStorage.setItem('qr-devices', JSON.stringify(devices));
         }
       }
+      setLoading(false);
       return;
     }
 
@@ -85,6 +89,7 @@ export default function DeviceDashboard() {
         setEditImage(found.image || '');
       }
     }
+    setLoading(false);
   };
 
   useEffect(() => {
@@ -106,7 +111,22 @@ export default function DeviceDashboard() {
     return () => clearInterval(interval);
   }, [id]);
 
-  if (!device) return <div className="p-xl text-center text-on-surface">Yükleniyor...</div>;
+  if (loading) return <div className="p-xl text-center text-on-surface">Yükleniyor...</div>;
+
+  if (!device) {
+    return (
+      <div className="max-w-[600px] mx-auto text-center space-y-md py-xl">
+        <span className="material-symbols-outlined text-error text-5xl">error</span>
+        <h1 className="font-headline-lg text-headline-lg text-on-surface">Cihaz Bulunamadı</h1>
+        <p className="font-body-md text-body-md text-on-surface-variant">
+          Aradığınız "{id}" ID'li cihaz veritabanında bulunamadı. Lütfen QR kodunun doğru olduğundan emin olun veya envanter sayfasından yeni bir cihaz ekleyin.
+        </p>
+        <Link to="/inventory" className="inline-flex items-center justify-center bg-primary text-on-primary px-lg py-sm rounded-lg font-label-md hover:opacity-90 transition-all">
+          Envantere Geri Dön
+        </Link>
+      </div>
+    );
+  }
 
   const circumference = 2 * Math.PI * 56;
   const strokeDashoffset = circumference - ((device.efficiency || 0) / 100) * circumference;
