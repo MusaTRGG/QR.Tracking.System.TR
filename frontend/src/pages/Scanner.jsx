@@ -61,7 +61,14 @@ export default function Scanner() {
             {isScannerActive ? (
               <>
                 <QRScanner 
-                    onResult={(text, result) => handleScan(text)} 
+                    onScan={(detectedCodes) => {
+                      if (detectedCodes && detectedCodes.length > 0) {
+                        handleScan(detectedCodes[0].rawValue);
+                      }
+                    }}
+                    onResult={(text, result) => {
+                      if (text) handleScan(text);
+                    }}
                     onError={(err) => setError(err?.message || 'Kamera erişim hatası. Tarayıcının HTTPS üzerinden çalıştığından emin olun.')}
                     options={{
                         delayBetweenScanSuccess: 2000,
