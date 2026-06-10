@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { QRCodeSVG } from 'qrcode.react';
+import { supabaseService } from '../supabaseService';
 
 export default function Dashboard() {
   const [devices, setDevices] = useState([]);
@@ -16,9 +17,20 @@ export default function Dashboard() {
         success = true;
       }
     } catch (e) {
-      console.warn("Backend connection failed, falling back to localStorage", e);
+      console.warn("Backend connection failed, falling back to Supabase/localStorage", e);
     }
     
+    if (!success) {
+      if (supabaseService.isConfigured()) {
+        const cloudData = await supabaseService.getDevices();
+        if (cloudData) {
+          setDevices(cloudData);
+          localStorage.setItem('qr-devices', JSON.stringify(cloudData));
+          success = true;
+        }
+      }
+    }
+
     if (!success) {
       const saved = localStorage.getItem('qr-devices');
       if (saved) {
@@ -68,7 +80,15 @@ export default function Dashboard() {
         success = true;
       }
     } catch (e) {
-      console.warn("Backend test device creation failed, sync to localStorage only", e);
+      console.warn("Backend test device creation failed, trying Supabase", e);
+    }
+
+    if (!success && supabaseService.isConfigured()) {
+      const added = await supabaseService.addDevice(newDevice);
+      if (added) {
+        setDevices(prev => [added, ...prev]);
+        success = true;
+      }
     }
     
     const saved = localStorage.getItem('qr-devices');
@@ -92,7 +112,15 @@ export default function Dashboard() {
           success = true;
         }
       } catch (e) {
-        console.warn("Backend clear failed, sync to localStorage only", e);
+        console.warn("Backend clear failed, trying Supabase", e);
+      }
+
+      if (!success && supabaseService.isConfigured()) {
+        const deleted = await supabaseService.deleteAllDevices();
+        if (deleted) {
+          setDevices([]);
+          success = true;
+        }
       }
       
       setDevices([]);

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { supabaseService } from '../supabaseService';
 
 export default function DeviceDashboard() {
   const { id } = useParams();
@@ -25,34 +26,49 @@ export default function DeviceDashboard() {
   const [maintDesc, setMaintDesc] = useState('');
 
   // Minimal dummy PDF base64
-  const dummyPdf = "data:application/pdf;base64,JVBERi0xLjEKJcKlwrHDqwoKMSAwIG9iagogIDw8IC9UeXBlIC9DYXRhbG9nCiAgICAgL1BhZ2VzIDIgMCBSCiAgPj4KZW5kb2JqCgoyIDAgb2JqCiAgPDwgL1R5cGUgL1BhZ2VzCiAgICAgL0tpZHMgWzMgMCBSXQogICAgIC9Db3VudCAxCiAgICAgL01lZGlhQm94IFswIDAgMzAwIDE0UF0KICA+PgplbmRvYmoKCjMgMCBvYmoKICA8PCAgL1R5cGUgL1BhZ2UKICAgICAgL1BhcmVudCAyIDAgUgogICAgICAvUmVzb3VyY2VzCiAgICAgICA8PCAvRm9udAogICAgICAgICAgIDw8IC9GMQogICAgICAgICAgICAgICA8PCAvVHlwZSAvRm9udAogICAgICAgICAgICAgICAgICAvU3VidHlwZSAvVHlwZTEKICAgICAgICAgICAgICAgICAgL0Jhc2VGb250IC9UaW1lcy1Sb21hbgogICAgICAgICAgICAgICA+PgogICAgICAgICAgID4+CiAgICAgICA+PgogICAgICAvQ29udGVudHMgNCAwIFIKICA+PgplbmRvYmoKCjQgMCBvYmoKICA8PCAvTGVuZ3RoIDU1ID4+CnN0cmVhbQogIEJUCiAgICAvRjEgMTggVGYKICAgIDAgMCAwIHJnCiAgICAoVGVzdCBEb2N1bWVudCkgVGoKICBFVAplbmRzdHJlYW0KZW5kb2JqCgp4cmVmCjAgNQowMDAwMDAwMDAwIDY1NTM1IGYgCjAwMDAwMDAwMTggMDAwMDAgbiAKMDAwMDAwMDA3NyAwMDAwMCBuIAowMDAwMDAwMTcheck8IDAwMDAwIG4gCjAwMDAwMDA0NTcvIDAwMDAwIG4gCnRyYWlsZXIKICA8PCAgL1Jvb3QgMSAwIFIKICAgICAgL1NpemUgNQogID4+CnN0YXJ0eHJlZgo1NjUKJSVFT0YK";
+  const dummyPdf = "data:application/pdf;base64,JVBERi0xLjEKJcKlwrHDqwoKMSAwIG9iagogIDw8IC9UeXBlIC9DYXRhbG9nCiAgICAgL1BhZ2VzIDIgMCBSCiAgPj4KZW5kb2JqCgoyIDAgb2JqCiAgPDwgL1R5cGUgL1BhZ2VzCiAgICAgL0tpZHMgWzMgMCBSXQogICAgIC9Db3VudCAxCiAgICAgL01lZGlhQm94IFswIDAgMzAwIDE0UF0KICA+PgplbmRvYmoKCjMgMCBvYmoKICA8PCAgL1R5cGUgL1BhZ2UKICAgICAgL1BhcmVudCAyIDAgUgogICAgICAvUmVzb3VyY2VzCiAgICAgICA8PCAvRm9udAogICAgICAgICAgIDw8IC9GMQogICAgICAgICAgICAgICA8PCAvVHlwZSAvRm9udAogICAgICAgICAgICAgICAgICAvU3VidHlwZSAvVHlwZTEKICAgICAgICAgICAgICAgICAgL0Jhc2VGb250IC9UaW1lcy1Sb21hbgogICAgICAgICAgICAgICA+PgogICAgICAgICAgID4+CiAgICAgICA+PgogICAgICAvQ29udGVudHMgNCAwIFIKICA+PgplbmRvYmoKCjQgMCBvYmoKICA8PCAvTGVuZ3RoIDU1ID4+CnN0cmVhbQogIEJUCiAgICAvRjEgMTggVGYKICAgIDAgMCAwIHJnCiAgICAoVGVzdCBEb2N1bWVudCkgVGoKICBFVAplbmRzdHJlYW0KZW5kb2JqCgp4cmVmCjAgNQowMDAwMDAwMDAwIDY1NTM1IGYgCjAwMDAwMDAwMTggMDAwMDAgbiAKMDAwMDAwMDA3NyAwMDAwMCBuIAowMDAwMDAwMTgzIDAwMDAwIG4gCjAwMDAwMDA0NTcgMDAwMDAgbiAKdHJhaWxlcgogIDw8ICAvUm9vdCAxIDAgUgogICAgICAvU2l6ZSA1CiAgPj4Kc3RhcnR4cmVmCjU2NQolJUVPRgo=";
 
   const fetchDevice = async () => {
+    let success = false;
+    let data = null;
+
     try {
       const response = await fetch(`/api/devices/${id}`);
       if (response.ok) {
-        const data = await response.json();
-        setDevice(data);
-        setEditName(data.name || '');
-        setEditSerial(data.serial || '');
-        setEditLocation(data.location || '');
-        setEditSpecs(data.specs || '');
-        setEditImage(data.image || '');
-        
-        // Sync back to localStorage
-        const saved = localStorage.getItem('qr-devices');
-        if (saved) {
-          const devices = JSON.parse(saved);
-          const foundIdx = devices.findIndex(d => d.id === id);
-          if (foundIdx !== -1) {
-            devices[foundIdx] = data;
-            localStorage.setItem('qr-devices', JSON.stringify(devices));
-          }
-        }
-        return;
+        data = await response.json();
+        success = true;
       }
     } catch (e) {
-      console.warn("Backend connection failed, falling back to localStorage", e);
+      console.warn("Backend connection failed, trying Supabase/localStorage", e);
+    }
+
+    if (!success && supabaseService.isConfigured()) {
+      const cloudData = await supabaseService.getDeviceById(id);
+      if (cloudData) {
+        data = cloudData;
+        success = true;
+      }
+    }
+
+    if (success && data) {
+      setDevice(data);
+      setEditName(data.name || '');
+      setEditSerial(data.serial || '');
+      setEditLocation(data.location || '');
+      setEditSpecs(data.specs || '');
+      setEditImage(data.image || '');
+      
+      // Sync back to localStorage
+      const saved = localStorage.getItem('qr-devices');
+      if (saved) {
+        const devices = JSON.parse(saved);
+        const foundIdx = devices.findIndex(d => d.id === id);
+        if (foundIdx !== -1) {
+          devices[foundIdx] = data;
+          localStorage.setItem('qr-devices', JSON.stringify(devices));
+        }
+      }
+      return;
     }
 
     // LocalStorage fallback
@@ -121,7 +137,46 @@ export default function DeviceDashboard() {
         success = true;
       }
     } catch (e) {
-      console.warn("Backend update failed, sync to localStorage only", e);
+      console.warn("Backend update failed, trying Supabase", e);
+    }
+
+    if (!success && supabaseService.isConfigured()) {
+      const currentDev = await supabaseService.getDeviceById(id);
+      if (currentDev) {
+        let updatedDevFields = { ...updatedFields };
+        if (newLog) {
+          let updatedEfficiency = currentDev.efficiency;
+          let updatedStatus = currentDev.status;
+          let updatedLastMaintenance = currentDev.lastMaintenance;
+          
+          if (newLog.type === 'Arıza Bildirimi') {
+            updatedStatus = 'Arızalı';
+            updatedEfficiency = Math.floor(Math.random() * 20 + 30);
+          } else if (newLog.type === 'Bakım') {
+            updatedStatus = 'Operasyonel';
+            updatedEfficiency = 100;
+            updatedLastMaintenance = newLog.date.split(' ')[0] || new Date().toLocaleDateString('tr-TR');
+          } else if (newLog.type === 'Durum Güncelleme') {
+            updatedStatus = 'Operasyonel';
+            updatedEfficiency = 100;
+          }
+          
+          updatedDevFields = {
+            ...updatedDevFields,
+            status: updatedStatus,
+            efficiency: updatedEfficiency,
+            lastMaintenance: updatedLastMaintenance,
+            logs: [newLog, ...(currentDev.logs || [])]
+          };
+        }
+        
+        const updated = await supabaseService.updateDevice(id, updatedDevFields);
+        if (updated) {
+          setDevice(updated);
+          finalDeviceState = updated;
+          success = true;
+        }
+      }
     }
 
     // Sync to localStorage as fallback
@@ -254,7 +309,14 @@ export default function DeviceDashboard() {
           success = true;
         }
       } catch (e) {
-        console.warn("Backend delete failed, sync to localStorage only", e);
+        console.warn("Backend delete failed, trying Supabase", e);
+      }
+
+      if (!success && supabaseService.isConfigured()) {
+        const deleted = await supabaseService.deleteDevice(id);
+        if (deleted) {
+          success = true;
+        }
       }
 
       // Sync with localStorage

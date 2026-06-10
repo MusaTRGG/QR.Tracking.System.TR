@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { supabaseService } from '../supabaseService';
 
 export default function Laboratories() {
   const { user } = useAuth();
@@ -45,7 +46,24 @@ export default function Laboratories() {
         success = true;
       }
     } catch (e) {
-      console.warn("Backend connection failed, falling back to localStorage", e);
+      console.warn("Backend connection failed, falling back to Supabase/localStorage", e);
+    }
+
+    if (!success && supabaseService.isConfigured()) {
+      const cloudLabs = await supabaseService.getLaboratories();
+      const cloudDevices = await supabaseService.getDevices();
+      if (cloudLabs && cloudDevices) {
+        currentLabs = cloudLabs;
+        currentDevices = cloudDevices;
+        setLabs(cloudLabs);
+        setDevices(cloudDevices);
+        localStorage.setItem('qr-laboratories', JSON.stringify(cloudLabs));
+        localStorage.setItem('qr-devices', JSON.stringify(cloudDevices));
+        if (cloudLabs.length > 0) {
+          setActiveTab(cloudLabs[0]);
+        }
+        success = true;
+      }
     }
 
     if (!success) {
@@ -120,12 +138,23 @@ export default function Laboratories() {
         success = true;
       }
     } catch (e) {
-      console.warn("Backend add lab failed, updating local storage only", e);
+      console.warn("Backend add lab failed, trying Supabase", e);
     }
 
-    const updatedLabs = [...labs, trimmed];
-    localStorage.setItem('qr-laboratories', JSON.stringify(updatedLabs));
+    if (!success && supabaseService.isConfigured()) {
+      const added = await supabaseService.addLaboratory(trimmed);
+      if (added) {
+        const updatedLabs = [...labs, trimmed];
+        setLabs(updatedLabs);
+        setActiveTab(trimmed);
+        localStorage.setItem('qr-laboratories', JSON.stringify(updatedLabs));
+        success = true;
+      }
+    }
+
     if (!success) {
+      const updatedLabs = [...labs, trimmed];
+      localStorage.setItem('qr-laboratories', JSON.stringify(updatedLabs));
       setLabs(updatedLabs);
       setActiveTab(trimmed);
     }
@@ -186,7 +215,15 @@ export default function Laboratories() {
         success = true;
       }
     } catch (e) {
-      console.warn("Backend add device failed, sync to localStorage only", e);
+      console.warn("Backend add device failed, trying Supabase", e);
+    }
+
+    if (!success && supabaseService.isConfigured()) {
+      const added = await supabaseService.addDevice(newDevice);
+      if (added) {
+        setDevices(prev => [added, ...prev]);
+        success = true;
+      }
     }
 
     // Sync to localStorage

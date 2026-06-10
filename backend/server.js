@@ -159,20 +159,6 @@ app.delete('/api/devices/:id', (req, res) => {
   res.json({ message: "Cihaz başarıyla silindi." });
 });
 
-// Serve compiled Frontend files (Production Build)
-const frontendDistPath = path.join(__dirname, '../frontend/dist');
-if (fs.existsSync(frontendDistPath)) {
-  app.use(express.static(frontendDistPath));
-  app.get('*', (req, res) => {
-    // Route non-API calls to the React Router index.html
-    if (!req.path.startsWith('/api')) {
-      res.sendFile(path.join(frontendDistPath, 'index.html'));
-    } else {
-      res.status(404).json({ error: "API endpoint not found." });
-    }
-  });
-}
-
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
