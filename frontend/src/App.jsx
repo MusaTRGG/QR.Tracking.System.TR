@@ -25,17 +25,17 @@ const ProtectedRoute = () => {
 
 function App() {
   useEffect(() => {
-    // Initialize default laboratories if they do not exist
-    const savedLabs = localStorage.getItem('qr-laboratories');
-    if (!savedLabs) {
-      const defaultLabs = ['PLC Labı', 'PC Labı', 'Elektronik Labı'];
-      localStorage.setItem('qr-laboratories', JSON.stringify(defaultLabs));
+    // Initialize default libraries if they do not exist
+    const savedLibraries = localStorage.getItem('qr-libraries');
+    if (!savedLibraries) {
+      const defaultLibraries = ['Beylikdüzü Kütüphanesi', 'Esenyurt Kütüphanesi', 'Avcılar Kütüphanesi'];
+      localStorage.setItem('qr-libraries', JSON.stringify(defaultLibraries));
     }
 
-    // Initialize default devices if they do not exist (start empty)
-    const savedDevices = localStorage.getItem('qr-devices');
-    if (!savedDevices) {
-      localStorage.setItem('qr-devices', JSON.stringify([]));
+    // Initialize default books if they do not exist (start empty)
+    const savedBooks = localStorage.getItem('qr-books');
+    if (!savedBooks) {
+      localStorage.setItem('qr-books', JSON.stringify([]));
     }
   }, []);
 
@@ -50,8 +50,8 @@ function App() {
               <Route path="/" element={<Layout />}>
                 <Route index element={<Dashboard />} />
                 <Route path="inventory" element={<Inventory />} />
-                <Route path="laboratories" element={<Laboratories />} />
-                <Route path="device/:id" element={<DeviceDashboard />} />
+                <Route path="libraries" element={<Laboratories />} />
+                <Route path="book/:id" element={<DeviceDashboard />} />
                 <Route path="scanner" element={<Scanner />} />
                 <Route path="notifications" element={<Notifications />} />
                 <Route path="profile" element={<Profile />} />

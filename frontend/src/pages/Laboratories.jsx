@@ -19,9 +19,8 @@ export default function Laboratories() {
   // New Device Form State
   const [deviceTemplate, setDeviceTemplate] = useState('custom');
   const [deviceName, setDeviceName] = useState('');
-  const [deviceSerial, setDeviceSerial] = useState('');
-  const [deviceStatus, setDeviceStatus] = useState('Operasyonel');
-  const [deviceEfficiency, setDeviceEfficiency] = useState(100);
+  const [deviceAuthor, setDeviceAuthor] = useState('');
+  const [deviceStatus, setDeviceStatus] = useState('Müsait');
   const [deviceImage, setDeviceImage] = useState('');
   const [deviceSpecs, setDeviceSpecs] = useState('');
 
@@ -31,15 +30,15 @@ export default function Laboratories() {
     let success = false;
     
     try {
-      const labsRes = await fetch('/api/laboratories');
-      const devicesRes = await fetch('/api/devices');
+      const labsRes = await fetch('/api/libraries');
+      const devicesRes = await fetch('/api/books');
       if (labsRes.ok && devicesRes.ok) {
         currentLabs = await labsRes.json();
         currentDevices = await devicesRes.json();
         setLabs(currentLabs);
         setDevices(currentDevices);
-        localStorage.setItem('qr-laboratories', JSON.stringify(currentLabs));
-        localStorage.setItem('qr-devices', JSON.stringify(currentDevices));
+        localStorage.setItem('qr-libraries', JSON.stringify(currentLabs));
+        localStorage.setItem('qr-books', JSON.stringify(currentDevices));
         if (currentLabs.length > 0) {
           setActiveTab(currentLabs[0]);
         }
@@ -50,15 +49,15 @@ export default function Laboratories() {
     }
 
     if (!success && supabaseService.isConfigured()) {
-      const cloudLabs = await supabaseService.getLaboratories();
-      const cloudDevices = await supabaseService.getDevices();
+      const cloudLabs = await supabaseService.getLibraries();
+      const cloudDevices = await supabaseService.getBooks();
       if (cloudLabs && cloudDevices) {
         currentLabs = cloudLabs;
         currentDevices = cloudDevices;
         setLabs(cloudLabs);
         setDevices(cloudDevices);
-        localStorage.setItem('qr-laboratories', JSON.stringify(cloudLabs));
-        localStorage.setItem('qr-devices', JSON.stringify(cloudDevices));
+        localStorage.setItem('qr-libraries', JSON.stringify(cloudLabs));
+        localStorage.setItem('qr-books', JSON.stringify(cloudDevices));
         if (cloudLabs.length > 0) {
           setActiveTab(cloudLabs[0]);
         }
@@ -68,19 +67,19 @@ export default function Laboratories() {
 
     if (!success) {
       // LocalStorage fallback
-      const savedLabs = localStorage.getItem('qr-laboratories');
+      const savedLabs = localStorage.getItem('qr-libraries');
       if (savedLabs) {
         currentLabs = JSON.parse(savedLabs);
       } else {
-        currentLabs = ['PLC Labı', 'PC Labı', 'Elektronik Labı'];
-        localStorage.setItem('qr-laboratories', JSON.stringify(currentLabs));
+        currentLabs = ['Beylikdüzü Kütüphanesi', 'Esenyurt Kütüphanesi', 'Avcılar Kütüphanesi'];
+        localStorage.setItem('qr-libraries', JSON.stringify(currentLabs));
       }
       setLabs(currentLabs);
       if (currentLabs.length > 0) {
         setActiveTab(currentLabs[0]);
       }
 
-      const savedDevices = localStorage.getItem('qr-devices');
+      const savedDevices = localStorage.getItem('qr-books');
       if (savedDevices) {
         currentDevices = JSON.parse(savedDevices);
         setDevices(currentDevices);
@@ -94,39 +93,43 @@ export default function Laboratories() {
 
   // Update template selection
   useEffect(() => {
-    if (deviceTemplate === 'plc-1200') {
-      setDeviceName('Siemens S7-1200 CPU 1214C');
+    if (deviceTemplate === 'nutuk') {
+      setDeviceName('Nutuk');
+      setDeviceAuthor('Mustafa Kemal Atatürk');
       setDeviceImage('');
-      setDeviceSpecs('14 Dijital Giriş (24V DC), 10 Dijital Çıkış (Röle), 2 Analog Giriş (0-10V DC), Entegre Profinet Portu, 100 KB çalışma belleği.');
-    } else if (deviceTemplate === 'plc-1500') {
-      setDeviceName('Siemens S7-1500 CPU 1511-1 PN');
+      setDeviceSpecs('Türkiye Cumhuriyeti\'nin kuruluşunu anlatan tarihi eser.');
+    } else if (deviceTemplate === 'sucveceza') {
+      setDeviceName('Suç ve Ceza');
+      setDeviceAuthor('Fyodor Dostoyevski');
       setDeviceImage('');
-      setDeviceSpecs('Ekranlı CPU, 150 KB program belleği, 1 MB veri belleği, 2 portlu switch içeren Profinet arayüzü, 60 ns bit işlem hızı.');
-    } else if (deviceTemplate === 'schneider-m221') {
-      setDeviceName('Schneider Modicon M221 TM221CE16R');
+      setDeviceSpecs('Dostoyevski\'nin vicdan ve ceza konulu ünlü romanı.');
+    } else if (deviceTemplate === 'simyaci') {
+      setDeviceName('Simyacı');
+      setDeviceAuthor('Paulo Coelho');
       setDeviceImage('');
-      setDeviceSpecs('9 Dijital Giriş, 7 Röle Çıkışı, 2 Analog Giriş, Ethernet portu, USB mini-B programlama portu, SD kart yuvası.');
+      setDeviceSpecs('Kişisel efsanesini arayan bir çobanın öyküsü.');
     } else if (deviceTemplate === 'custom') {
       setDeviceName('');
+      setDeviceAuthor('');
       setDeviceImage('');
       setDeviceSpecs('');
     }
   }, [deviceTemplate]);
 
-  // Add a new laboratory tab
+  // Add a new library branch tab
   const handleAddLab = async (e) => {
     e.preventDefault();
     const trimmed = newLabName.trim();
     if (!trimmed) return;
 
     if (labs.some(l => l.toLowerCase() === trimmed.toLowerCase())) {
-      alert('Bu isimde bir laboratuvar zaten mevcut.');
+      alert('Bu isimde bir kütüphane şubesi zaten mevcut.');
       return;
     }
 
     let success = false;
     try {
-      const res = await fetch('/api/laboratories', {
+      const res = await fetch('/api/libraries', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: trimmed })
@@ -138,23 +141,23 @@ export default function Laboratories() {
         success = true;
       }
     } catch (e) {
-      console.warn("Backend add lab failed, trying Supabase", e);
+      console.warn("Backend add library failed, trying Supabase", e);
     }
 
     if (!success && supabaseService.isConfigured()) {
-      const added = await supabaseService.addLaboratory(trimmed);
+      const added = await supabaseService.addLibrary(trimmed);
       if (added) {
         const updatedLabs = [...labs, trimmed];
         setLabs(updatedLabs);
         setActiveTab(trimmed);
-        localStorage.setItem('qr-laboratories', JSON.stringify(updatedLabs));
+        localStorage.setItem('qr-libraries', JSON.stringify(updatedLabs));
         success = true;
       }
     }
 
     if (!success) {
       const updatedLabs = [...labs, trimmed];
-      localStorage.setItem('qr-laboratories', JSON.stringify(updatedLabs));
+      localStorage.setItem('qr-libraries', JSON.stringify(updatedLabs));
       setLabs(updatedLabs);
       setActiveTab(trimmed);
     }
@@ -174,29 +177,31 @@ export default function Laboratories() {
     }
   };
 
-  // Add a new device directly to active laboratory
+  // Add a new book directly to active library
   const handleAddDevice = async (e) => {
     e.preventDefault();
     if (!deviceName.trim()) return;
 
-    const newId = `PLC-${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}`;
+    const newId = `BK-${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}`;
     const newDevice = {
       id: newId,
-      name: deviceName,
-      serial: deviceSerial || `SN-${Math.floor(Math.random() * 1000000)}`,
-      location: activeTab, // Set location as the current active lab tab
+      title: deviceName,
+      author: deviceAuthor || 'Bilinmeyen Yazar',
+      location: activeTab,
       status: deviceStatus,
-      efficiency: parseInt(deviceEfficiency) || 100,
-      lastMaintenance: new Date().toLocaleDateString('tr-TR'),
+      is_in_library: deviceStatus === 'Müsait',
+      borrowed_by: null,
+      borrowed_date: null,
+      days_to_return: null,
       image: deviceImage,
-      specs: deviceSpecs,
-      manager: user?.name || 'Ahmet Y.',
+      summary: deviceSpecs,
+      manager: user?.name || 'Kütüphane Görevlisi',
       date: new Date().toLocaleDateString('tr-TR'),
       logs: [
         {
           date: new Date().toLocaleString('tr-TR'),
           type: 'Sistem',
-          description: `Cihaz ${activeTab} bünyesine eklendi.`,
+          description: `Kitap ${activeTab} envanterine kaydedildi.`,
           user: user?.name || 'Sistem'
         }
       ]
@@ -204,7 +209,7 @@ export default function Laboratories() {
 
     let success = false;
     try {
-      const res = await fetch('/api/devices', {
+      const res = await fetch('/api/books', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newDevice)
@@ -215,7 +220,7 @@ export default function Laboratories() {
         success = true;
       }
     } catch (e) {
-      console.warn("Backend add device failed, trying Supabase", e);
+      console.warn("Backend add book failed, trying Supabase", e);
     }
 
     if (!success && supabaseService.isConfigured()) {
@@ -227,10 +232,10 @@ export default function Laboratories() {
     }
 
     // Sync to localStorage
-    const saved = localStorage.getItem('qr-devices');
+    const saved = localStorage.getItem('qr-books');
     const localDevs = saved ? JSON.parse(saved) : [];
     const updatedDevices = [newDevice, ...localDevs];
-    localStorage.setItem('qr-devices', JSON.stringify(updatedDevices));
+    localStorage.setItem('qr-books', JSON.stringify(updatedDevices));
     if (!success) {
       setDevices(updatedDevices);
     }
@@ -238,16 +243,15 @@ export default function Laboratories() {
     // Reset Form
     setDeviceTemplate('custom');
     setDeviceName('');
-    setDeviceSerial('');
-    setDeviceStatus('Operasyonel');
-    setDeviceEfficiency(100);
+    setDeviceAuthor('');
+    setDeviceStatus('Müsait');
     setDeviceSpecs('');
     setDeviceImage('');
     setAddDeviceModalOpen(false);
-    alert('Cihaz başarıyla bu laboratuvara eklendi.');
+    alert('Kitap başarıyla bu şubeye eklendi.');
   };
 
-  // Filter devices belonging to active lab
+  // Filter books belonging to active library
   const currentLabDevices = devices.filter(d => 
     d.location && d.location.toLowerCase().includes(activeTab.toLowerCase())
   );
@@ -255,169 +259,101 @@ export default function Laboratories() {
   return (
     <div className="max-w-[1440px] mx-auto space-y-lg text-on-surface">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-md">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-md">
         <div>
-          <h1 className="font-headline-lg text-headline-lg text-on-surface">Laboratuvar Yönetimi</h1>
-          <p className="font-body-md text-body-md text-on-surface-variant">Sınıf, atölye ve laboratuvar bazlı nesne yerleşimi ve yönetimi.</p>
+          <h1 className="font-headline-xl text-headline-xl text-on-surface">Kütüphane Şubeleri</h1>
+          <p className="font-body-md text-body-md text-on-surface-variant mt-xs">Şubelerimizdeki kitapları filtreleyin veya yeni bir şube ekleyin</p>
         </div>
-        <div className="flex gap-sm">
-          <button 
-            onClick={() => setAddLabModalOpen(true)}
-            className="border border-outline text-on-surface hover:bg-surface-container-high px-md py-sm rounded-lg flex items-center gap-xs font-label-md text-label-md transition-colors"
-          >
-            <span className="material-symbols-outlined">add_box</span>
-            Yeni Lab Ekle
-          </button>
-          <button 
-            onClick={() => setAddDeviceModalOpen(true)}
-            className="bg-primary text-on-primary hover:opacity-90 px-md py-sm rounded-lg flex items-center gap-xs font-label-md text-label-md transition-colors shadow-sm"
-          >
-            <span className="material-symbols-outlined">add</span>
-            Cihaz Ekle
-          </button>
-        </div>
+        <button 
+          onClick={() => setAddLabModalOpen(true)}
+          className="flex items-center gap-xs bg-primary text-on-primary hover:opacity-90 px-md py-sm rounded-lg font-label-md text-label-md transition-colors shadow-md cursor-pointer"
+        >
+          <span className="material-symbols-outlined text-[18px]">add</span>
+          Yeni Şube Ekle
+        </button>
       </div>
 
-      {/* Tabs Layout */}
-      <div className="bg-surface-container-lowest border border-outline-variant rounded-xl shadow-sm overflow-hidden">
-        {/* Tab Headers */}
-        <div className="flex items-center border-b border-outline-variant bg-surface-container-low overflow-x-auto scrollbar-none">
-          {labs.map((lab) => (
-            <button
-              key={lab}
-              onClick={() => setActiveTab(lab)}
-              className={`px-lg py-md font-label-md text-label-md whitespace-nowrap transition-all border-b-2 ${
-                activeTab === lab 
-                  ? 'text-primary border-primary font-bold bg-surface-container-lowest' 
-                  : 'text-on-surface-variant border-transparent hover:bg-surface-container'
-              }`}
-            >
-              {lab}
-            </button>
-          ))}
+      {/* Tabs list of libraries */}
+      <div className="flex gap-xs border-b border-outline-variant overflow-x-auto pb-xs scrollbar-hide">
+        {labs.map(labName => (
           <button 
-            onClick={() => setAddLabModalOpen(true)}
-            className="px-md py-md text-primary hover:bg-primary-container/10 flex items-center justify-center transition-colors"
-            title="Yeni Laboratuvar Ekle"
+            key={labName}
+            onClick={() => setActiveTab(labName)}
+            className={`px-lg py-sm font-label-md text-label-md whitespace-nowrap transition-colors border-b-2 ${activeTab === labName ? 'border-primary text-primary font-bold' : 'border-transparent text-on-surface-variant hover:text-on-surface'}`}
           >
-            <span className="material-symbols-outlined">add</span>
+            {labName}
           </button>
-        </div>
+        ))}
+      </div>
 
-        {/* Tab Content */}
-        <div className="p-lg">
-          <div className="flex justify-between items-center mb-lg">
-            <h2 className="font-headline-md text-headline-md">{activeTab} Envanteri</h2>
-            <span className="font-body-sm text-body-sm text-on-surface-variant">
-              Bu laboratuvarda <span className="font-bold">{currentLabDevices.length}</span> cihaz bulunuyor.
-            </span>
+      {/* Active Tab Panel */}
+      {activeTab && (
+        <div className="space-y-md">
+          <div className="flex justify-between items-center bg-surface-container-low p-md rounded-xl border border-outline-variant">
+            <h3 className="font-headline-md text-headline-md text-on-surface">{activeTab} Kitaplığı</h3>
+            <button 
+              onClick={() => setAddDeviceModalOpen(true)}
+              className="flex items-center gap-xs bg-primary text-on-primary hover:opacity-90 px-md py-xs rounded-lg font-label-sm text-label-sm transition-colors shadow cursor-pointer"
+            >
+              <span className="material-symbols-outlined text-[16px]">add</span>
+              Bu Şubeye Kitap Ekle
+            </button>
           </div>
 
-          {/* Device Cards Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-grid-gutter">
-            {currentLabDevices.map((dev) => (
-              <div 
-                key={dev.id} 
-                className="bg-surface-container rounded-xl border border-outline-variant overflow-hidden hover:shadow-md transition-all duration-300 flex flex-col group"
-              >
-                {/* Visual Area */}
-                <div className="aspect-[4/3] bg-white relative overflow-hidden flex items-center justify-center p-md border-b border-outline-variant">
-                  {dev.image ? (
-                    <img 
-                      src={dev.image} 
-                      alt={dev.name} 
-                      className="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform duration-300"
-                    />
-                  ) : (
-                    <div className="flex flex-col items-center justify-center text-on-surface-variant gap-xs">
-                      <span className="material-symbols-outlined text-[60px] opacity-40">developer_board</span>
-                      <span className="font-label-sm text-label-sm">Görsel Yok</span>
-                    </div>
-                  )}
-                  <div className="absolute top-sm right-sm">
-                    <span className={`inline-flex items-center px-sm py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                      dev.status === 'Operasyonel' ? 'bg-secondary-container text-on-secondary-container' :
-                      dev.status === 'Bakımda' ? 'bg-tertiary-container text-on-tertiary-container' :
-                      'bg-error-container text-on-error-container'
-                    }`}>
-                      {dev.status}
-                    </span>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-grid-gutter">
+            {currentLabDevices.map(book => (
+              <div key={book.id} className="bg-surface-container-lowest border border-outline-variant rounded-xl p-md shadow-sm flex flex-col items-center hover:shadow-md transition-shadow">
+                <div className="w-full flex justify-between items-start mb-md border-b border-surface-container-low pb-sm">
+                  <div className="flex-grow pr-xs">
+                    <h4 className="font-headline-md text-[13px] text-on-surface line-clamp-1">{book.title}</h4>
+                    <p className="text-[10px] text-on-surface-variant line-clamp-1">{book.author}</p>
                   </div>
+                  <span className={`px-sm py-[2px] rounded-full text-[9px] font-bold uppercase ${book.status === 'Müsait' ? 'bg-success/15 text-success' : 'bg-error/15 text-error'}`}>
+                    {book.status}
+                  </span>
                 </div>
-
-                {/* Content Area */}
-                <div className="p-md flex-grow flex flex-col justify-between space-y-md">
-                  <div>
-                    <h3 className="font-label-md text-label-md text-on-surface line-clamp-1">{dev.name}</h3>
-                    <p className="text-body-sm text-on-surface-variant mt-xs">ID: {dev.id}</p>
-                    <p className="text-body-sm text-on-surface-variant">Seri No: {dev.serial}</p>
+                {book.image ? (
+                  <img src={book.image} alt={book.title} className="w-24 h-32 object-contain rounded border border-outline-variant bg-white mb-md" />
+                ) : (
+                  <div className="w-24 h-32 flex flex-col items-center justify-center rounded border border-outline bg-surface-container-low text-on-surface-variant mb-md">
+                    <span className="material-symbols-outlined text-3xl mb-xs">menu_book</span>
+                    <span className="text-[10px] font-bold">KAPAK RESMİ</span>
                   </div>
-
-                  {/* Gauge/Bar */}
-                  <div className="space-y-xs">
-                    <div className="flex justify-between text-body-sm text-on-surface-variant">
-                      <span>Verim Performansı</span>
-                      <span className="font-bold">{dev.efficiency}%</span>
-                    </div>
-                    <div className="w-full bg-surface-container-highest h-2 rounded-full overflow-hidden">
-                      <div 
-                        className={`h-full rounded-full transition-all duration-1000 ${
-                          dev.efficiency < 70 ? 'bg-error' : 'bg-secondary'
-                        }`}
-                        style={{ width: `${dev.efficiency}%` }}
-                      ></div>
-                    </div>
-                  </div>
-
-                  {/* Actions */}
-                  <Link 
-                    to={`/device/${dev.id}`}
-                    className="w-full flex items-center justify-center gap-xs bg-primary-container text-on-primary-container hover:bg-primary-container/85 px-md py-sm rounded-lg font-label-md text-label-md transition-colors"
-                  >
-                    <span className="material-symbols-outlined text-[18px]">visibility</span>
-                    Cihaz Panelini Aç
-                  </Link>
-                </div>
+                )}
+                <Link to={`/book/${book.id}`} className="w-full flex justify-center items-center gap-xs border border-primary text-primary hover:bg-primary-container/10 px-md py-xs rounded-lg font-label-md text-label-md transition-colors mt-auto">
+                  <span className="material-symbols-outlined text-[16px]">visibility</span>
+                  Kitap Paneli
+                </Link>
               </div>
             ))}
-
             {currentLabDevices.length === 0 && (
-              <div className="col-span-full py-xl text-center text-on-surface-variant border border-dashed border-outline-variant rounded-xl p-lg bg-surface-container-low flex flex-col items-center justify-center">
-                <span className="material-symbols-outlined text-4xl mb-sm block opacity-40">science</span>
-                <h3 className="font-headline-md text-headline-md mb-xs">Laboratuvar Boş</h3>
-                <p className="font-body-sm text-body-sm max-w-sm mb-md">Bu laboratuvar altında tanımlanmış herhangi bir cihaz bulunmamaktadır.</p>
-                <button 
-                  onClick={() => setAddDeviceModalOpen(true)}
-                  className="bg-primary text-on-primary hover:opacity-90 px-md py-sm rounded-lg font-label-md text-label-md transition-all flex items-center gap-xs"
-                >
-                  <span className="material-symbols-outlined">add</span>
-                  İlk Cihazı Ekle
-                </button>
+              <div className="col-span-full py-xl text-center text-on-surface-variant bg-surface-container-low border border-dashed border-outline rounded-xl">
+                Bu şubeye henüz kitap kaydedilmemiş.
               </div>
             )}
           </div>
         </div>
-      </div>
+      )}
 
-      {/* Add Lab Modal */}
+      {/* Add Library Branch Modal */}
       {isAddLabModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-md">
-          <div className="bg-surface border border-outline-variant rounded-xl w-full max-w-[400px] overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-200">
+          <div className="bg-surface border border-outline-variant rounded-xl w-full max-w-[450px] overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-200 text-on-surface">
             <div className="bg-primary text-on-primary px-lg py-md flex justify-between items-center">
               <h3 className="font-headline-md text-headline-md flex items-center gap-sm">
-                <span className="material-symbols-outlined">add_box</span> Yeni Lab Ekle
+                <span className="material-symbols-outlined">local_library</span> Yeni Şube Ekle
               </h3>
-              <button onClick={() => setAddLabModalOpen(false)} className="hover:opacity-75 flex items-center justify-center">
+              <button onClick={() => setAddLabModalOpen(false)} className="hover:opacity-70 flex items-center justify-center">
                 <span className="material-symbols-outlined">close</span>
               </button>
             </div>
             <form className="p-lg space-y-md" onSubmit={handleAddLab}>
               <div>
-                <label className="block font-label-sm text-on-surface-variant mb-xs">Laboratuvar Adı</label>
+                <label className="block font-label-sm text-on-surface-variant mb-xs">Kütüphane Şubesi Adı</label>
                 <input 
                   type="text" 
                   required
-                  placeholder="Örn: PLC Labı, Bilişim Atölyesi..."
+                  placeholder="Örn: Beylikdüzü Kütüphanesi"
                   value={newLabName}
                   onChange={(e) => setNewLabName(e.target.value)}
                   className="w-full p-sm border border-outline-variant rounded-lg bg-surface focus:ring-2 focus:ring-primary outline-none text-body-md text-on-surface"
@@ -425,127 +361,99 @@ export default function Laboratories() {
               </div>
               <div className="flex justify-end gap-sm pt-sm border-t border-surface-container-highest">
                 <button type="button" onClick={() => setAddLabModalOpen(false)} className="px-md py-sm font-label-md text-on-surface-variant hover:bg-surface-container rounded-lg">İptal</button>
-                <button type="submit" className="bg-primary text-on-primary px-md py-sm rounded-lg font-label-md hover:bg-primary-container transition-colors">Lab Oluştur</button>
+                <button type="submit" className="bg-primary text-on-primary px-md py-sm rounded-lg font-label-md hover:bg-primary-container hover:text-on-primary-container transition-colors cursor-pointer">Şube Ekle</button>
               </div>
             </form>
           </div>
         </div>
       )}
 
-      {/* Add Device Modal */}
+      {/* Add Book directly Modal */}
       {isAddDeviceModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-md">
-          <div className="bg-surface border border-outline-variant rounded-xl w-full max-w-[550px] overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-200">
+          <div className="bg-surface border border-outline-variant rounded-xl w-full max-w-[550px] overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-200 text-on-surface max-h-[90vh] flex flex-col">
             <div className="bg-primary text-on-primary px-lg py-md flex justify-between items-center">
               <h3 className="font-headline-md text-headline-md flex items-center gap-sm">
-                <span className="material-symbols-outlined">add</span> Cihaz Tanımla ({activeTab})
+                <span className="material-symbols-outlined">add</span> {activeTab} Şubesine Kitap Ekle
               </h3>
               <button onClick={() => setAddDeviceModalOpen(false)} className="hover:opacity-75 flex items-center justify-center">
                 <span className="material-symbols-outlined">close</span>
               </button>
             </div>
-            <form className="p-lg space-y-md" onSubmit={handleAddDevice}>
+            <form className="p-lg space-y-md overflow-y-auto flex-grow" onSubmit={handleAddDevice}>
               <div>
-                <label className="block font-label-sm text-on-surface-variant mb-xs">Hazır Şablon Kullan</label>
+                <label className="block font-label-sm text-on-surface-variant mb-xs">Şablon Seç</label>
                 <select 
                   value={deviceTemplate}
                   onChange={(e) => setDeviceTemplate(e.target.value)}
                   className="w-full p-sm border border-outline-variant rounded-lg bg-surface focus:ring-2 focus:ring-primary outline-none text-body-md text-on-surface"
                 >
-                  <option value="custom">Özel Tanımlı Boş Cihaz</option>
-                  <option value="plc-1200">Siemens S7-1200 PLC Şablonu</option>
-                  <option value="plc-1500">Siemens S7-1500 PLC Şablonu</option>
-                  <option value="schneider-m221">Schneider Modicon M221 Şablonu</option>
+                  <option value="custom">-- Manuel Giriş --</option>
+                  <option value="nutuk">Nutuk - Atatürk</option>
+                  <option value="sucveceza">Suç ve Ceza - Dostoyevski</option>
+                  <option value="simyaci">Simyacı - Paulo Coelho</option>
                 </select>
               </div>
 
               <div>
-                <label className="block font-label-sm text-on-surface-variant mb-xs">Cihaz Adı</label>
+                <label className="block font-label-sm text-on-surface-variant mb-xs">Kitap Adı</label>
                 <input 
                   type="text" 
                   required
-                  placeholder="Cihaz model veya ismini girin..."
                   value={deviceName}
                   onChange={(e) => setDeviceName(e.target.value)}
                   className="w-full p-sm border border-outline-variant rounded-lg bg-surface focus:ring-2 focus:ring-primary outline-none text-body-md text-on-surface"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-md">
-                <div>
-                  <label className="block font-label-sm text-on-surface-variant mb-xs">Seri Numarası</label>
-                  <input 
-                    type="text" 
-                    placeholder="Örn: SN-123456"
-                    value={deviceSerial}
-                    onChange={(e) => setDeviceSerial(e.target.value)}
-                    className="w-full p-sm border border-outline-variant rounded-lg bg-surface focus:ring-2 focus:ring-primary outline-none text-body-md text-on-surface"
-                  />
-                </div>
-                <div>
-                  <label className="block font-label-sm text-on-surface-variant mb-xs">Başlangıç Verimi (%)</label>
-                  <input 
-                    type="number" 
-                    min="0" 
-                    max="100"
-                    value={deviceEfficiency}
-                    onChange={(e) => setDeviceEfficiency(e.target.value)}
-                    className="w-full p-sm border border-outline-variant rounded-lg bg-surface focus:ring-2 focus:ring-primary outline-none text-body-md text-on-surface"
-                  />
-                </div>
+              <div>
+                <label className="block font-label-sm text-on-surface-variant mb-xs">Yazar</label>
+                <input 
+                  type="text" 
+                  required
+                  value={deviceAuthor}
+                  onChange={(e) => setDeviceAuthor(e.target.value)}
+                  className="w-full p-sm border border-outline-variant rounded-lg bg-surface focus:ring-2 focus:ring-primary outline-none text-body-md text-on-surface"
+                />
               </div>
 
-              <div className="grid grid-cols-2 gap-md">
-                <div>
-                  <label className="block font-label-sm text-on-surface-variant mb-xs">Durum</label>
-                  <select 
-                    value={deviceStatus}
-                    onChange={(e) => setDeviceStatus(e.target.value)}
-                    className="w-full p-sm border border-outline-variant rounded-lg bg-surface focus:ring-2 focus:ring-primary outline-none text-body-md text-on-surface"
-                  >
-                    <option value="Operasyonel">Operasyonel</option>
-                    <option value="Bakımda">Bakımda</option>
-                    <option value="Arızalı">Arızalı</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block font-label-sm text-on-surface-variant mb-xs">Cihaz Görseli</label>
-                  <div className="flex items-center gap-sm">
-                    {deviceImage ? (
-                      <img src={deviceImage} alt="Önizleme" className="w-10 h-10 object-contain rounded border border-outline bg-white" />
-                    ) : (
-                      <div className="w-10 h-10 flex items-center justify-center rounded border border-outline bg-surface-container-low text-on-surface-variant">
-                        <span className="material-symbols-outlined text-[20px]">image</span>
-                      </div>
-                    )}
-                    <label className="cursor-pointer bg-surface border border-outline-variant hover:bg-surface-container-high text-on-surface px-sm py-[7px] rounded-lg font-label-md text-label-md transition-colors flex items-center gap-xs">
-                      <span className="material-symbols-outlined text-[18px]">upload</span>
-                      Görsel Seç
-                      <input 
-                        type="file" 
-                        accept="image/*" 
-                        onChange={handleImageChange} 
-                        className="hidden" 
-                      />
-                    </label>
-                  </div>
+              <div>
+                <label className="block font-label-sm text-on-surface-variant mb-xs">Kapak Görseli</label>
+                <div className="flex items-center gap-sm">
+                  {deviceImage ? (
+                    <img src={deviceImage} alt="Önizleme" className="w-12 h-16 object-contain rounded border border-outline bg-white" />
+                  ) : (
+                    <div className="w-12 h-16 flex items-center justify-center rounded border border-outline bg-surface-container-low text-on-surface-variant">
+                      <span className="material-symbols-outlined text-[20px]">image</span>
+                    </div>
+                  )}
+                  <label className="cursor-pointer bg-surface border border-outline-variant hover:bg-surface-container-high text-on-surface px-sm py-[7px] rounded-lg font-label-md text-label-md transition-colors flex items-center gap-xs">
+                    <span className="material-symbols-outlined text-[18px]">upload</span>
+                    Görsel Seç
+                    <input 
+                      type="file" 
+                      accept="image/*" 
+                      onChange={handleImageChange} 
+                      className="hidden" 
+                    />
+                  </label>
                 </div>
               </div>
 
               <div>
-                <label className="block font-label-sm text-on-surface-variant mb-xs">Teknik Özellikler</label>
+                <label className="block font-label-sm text-on-surface-variant mb-xs">Kitap Özeti</label>
                 <textarea 
-                  rows="3"
-                  placeholder="Kanal bilgileri, çalışma hızı vb. özellikleri yazın..."
+                  rows="3" 
                   value={deviceSpecs}
                   onChange={(e) => setDeviceSpecs(e.target.value)}
                   className="w-full p-sm border border-outline-variant rounded-lg bg-surface focus:ring-2 focus:ring-primary outline-none text-body-md text-on-surface"
+                  placeholder="Kitap özetini buraya ekleyin..."
                 ></textarea>
               </div>
 
               <div className="flex justify-end gap-sm pt-sm border-t border-surface-container-highest">
                 <button type="button" onClick={() => setAddDeviceModalOpen(false)} className="px-md py-sm font-label-md text-on-surface-variant hover:bg-surface-container rounded-lg">İptal</button>
-                <button type="submit" className="bg-primary text-on-primary px-md py-sm rounded-lg font-label-md hover:bg-primary-container transition-colors">Cihazı Ekle</button>
+                <button type="submit" className="bg-primary text-on-primary px-md py-sm rounded-lg font-label-md hover:bg-primary-container hover:text-on-primary-container transition-colors cursor-pointer shadow">Kitap Ekle</button>
               </div>
             </form>
           </div>

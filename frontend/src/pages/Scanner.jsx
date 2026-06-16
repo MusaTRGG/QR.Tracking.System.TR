@@ -9,23 +9,19 @@ export default function Scanner() {
 
   const handleScan = (text) => {
     if (text) {
-      // Check if it's a URL leading to a device
+      // Check if it's a URL leading to a book or legacy device
       try {
         const url = new URL(text);
-        if (url.pathname.includes('/device/')) {
-          const deviceId = url.pathname.split('/').pop();
-          navigate(`/device/${deviceId}`);
+        if (url.pathname.includes('/book/') || url.pathname.includes('/device/')) {
+          const bookId = url.pathname.split('/').pop();
+          navigate(`/book/${bookId}`);
         } else {
             // Not our system QR
             setError('Bu QR kod sisteme ait değil.');
         }
       } catch (e) {
-        // Not a URL, maybe just raw device ID
-        if(text.startsWith('PLC-') || text.startsWith('LAB-') || text.startsWith('OSC-') || text.startsWith('CEN-')) {
-            navigate(`/device/${text}`);
-        } else {
-            setError('Geçersiz QR kod formatı.');
-        }
+        // Not a URL, navigate directly as book ID
+        navigate(`/book/${text}`);
       }
     }
   };

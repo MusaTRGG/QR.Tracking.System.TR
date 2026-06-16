@@ -20,11 +20,11 @@ const getHeaders = () => ({
 export const supabaseService = {
   isConfigured,
 
-  // --- LABORATORIES ---
-  async getLaboratories() {
+  // --- LIBRARIES (Eski Laboratories) ---
+  async getLibraries() {
     if (!isConfigured()) return null;
     try {
-      const res = await fetch(`${SUPABASE_URL}/rest/v1/laboratories?select=name`, {
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/libraries?select=name`, {
         method: 'GET',
         headers: getHeaders()
       });
@@ -32,18 +32,18 @@ export const supabaseService = {
         const data = await res.json();
         return data.map(item => item.name);
       }
-      console.error('Supabase getLaboratories error:', await res.text());
+      console.error('Supabase getLibraries error:', await res.text());
       return null;
     } catch (e) {
-      console.error('Supabase network error (getLaboratories):', e);
+      console.error('Supabase network error (getLibraries):', e);
       return null;
     }
   },
 
-  async addLaboratory(name) {
+  async addLibrary(name) {
     if (!isConfigured()) return false;
     try {
-      const res = await fetch(`${SUPABASE_URL}/rest/v1/laboratories`, {
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/libraries`, {
         method: 'POST',
         headers: getHeaders(),
         body: JSON.stringify({ name })
@@ -51,37 +51,37 @@ export const supabaseService = {
       if (res.ok) {
         return true;
       }
-      console.error('Supabase addLaboratory error:', await res.text());
+      console.error('Supabase addLibrary error:', await res.text());
       return false;
     } catch (e) {
-      console.error('Supabase network error (addLaboratory):', e);
+      console.error('Supabase network error (addLibrary):', e);
       return false;
     }
   },
 
-  // --- DEVICES ---
-  async getDevices() {
+  // --- BOOKS (Eski Devices) ---
+  async getBooks() {
     if (!isConfigured()) return null;
     try {
-      const res = await fetch(`${SUPABASE_URL}/rest/v1/devices?select=*&order=created_at.desc`, {
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/books?select=*`, {
         method: 'GET',
         headers: getHeaders()
       });
       if (res.ok) {
         return await res.json();
       }
-      console.error('Supabase getDevices error:', await res.text());
+      console.error('Supabase getBooks error:', await res.text());
       return null;
     } catch (e) {
-      console.error('Supabase network error (getDevices):', e);
+      console.error('Supabase network error (getBooks):', e);
       return null;
     }
   },
 
-  async getDeviceById(id) {
+  async getBookById(id) {
     if (!isConfigured()) return null;
     try {
-      const res = await fetch(`${SUPABASE_URL}/rest/v1/devices?id=eq.${id}&select=*`, {
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/books?id=eq.${id}&select=*`, {
         method: 'GET',
         headers: getHeaders()
       });
@@ -89,24 +89,34 @@ export const supabaseService = {
         const data = await res.json();
         return data.length > 0 ? data[0] : null;
       }
-      console.error('Supabase getDeviceById error:', await res.text());
+      console.error('Supabase getBookById error:', await res.text());
       return null;
     } catch (e) {
-      console.error('Supabase network error (getDeviceById):', e);
+      console.error('Supabase network error (getBookById):', e);
       return null;
     }
   },
 
-  async addDevice(device) {
+  async addBook(book) {
     if (!isConfigured()) return null;
     try {
-      // Ensure logs array is parsed properly
+      // Strip local temp client fields like createdAt
       const payload = {
-        ...device,
-        logs: Array.isArray(device.logs) ? device.logs : []
+        id: book.id,
+        title: book.title,
+        author: book.author || '',
+        location: book.location,
+        status: book.status || 'Müsait',
+        is_in_library: book.is_in_library !== undefined ? book.is_in_library : true,
+        borrowed_by: book.borrowed_by || null,
+        borrowed_date: book.borrowed_date || null,
+        days_to_return: book.days_to_return !== undefined ? book.days_to_return : null,
+        image: book.image || '',
+        summary: book.summary || '',
+        logs: Array.isArray(book.logs) ? book.logs : []
       };
       
-      const res = await fetch(`${SUPABASE_URL}/rest/v1/devices`, {
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/books`, {
         method: 'POST',
         headers: getHeaders(),
         body: JSON.stringify(payload)
@@ -115,18 +125,18 @@ export const supabaseService = {
         const data = await res.json();
         return data.length > 0 ? data[0] : payload;
       }
-      console.error('Supabase addDevice error:', await res.text());
+      console.error('Supabase addBook error:', await res.text());
       return null;
     } catch (e) {
-      console.error('Supabase network error (addDevice):', e);
+      console.error('Supabase network error (addBook):', e);
       return null;
     }
   },
 
-  async updateDevice(id, fields) {
+  async updateBook(id, fields) {
     if (!isConfigured()) return null;
     try {
-      const res = await fetch(`${SUPABASE_URL}/rest/v1/devices?id=eq.${id}`, {
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/books?id=eq.${id}`, {
         method: 'PATCH',
         headers: getHeaders(),
         body: JSON.stringify(fields)
@@ -135,48 +145,46 @@ export const supabaseService = {
         const data = await res.json();
         return data.length > 0 ? data[0] : null;
       }
-      console.error('Supabase updateDevice error:', await res.text());
+      console.error('Supabase updateBook error:', await res.text());
       return null;
     } catch (e) {
-      console.error('Supabase network error (updateDevice):', e);
+      console.error('Supabase network error (updateBook):', e);
       return null;
     }
   },
 
-  async deleteDevice(id) {
+  async deleteBook(id) {
     if (!isConfigured()) return false;
     try {
-      const res = await fetch(`${SUPABASE_URL}/rest/v1/devices?id=eq.${id}`, {
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/books?id=eq.${id}`, {
         method: 'DELETE',
         headers: getHeaders()
       });
       if (res.ok) {
         return true;
       }
-      console.error('Supabase deleteDevice error:', await res.text());
+      console.error('Supabase deleteBook error:', await res.text());
       return false;
     } catch (e) {
-      console.error('Supabase network error (deleteDevice):', e);
+      console.error('Supabase network error (deleteBook):', e);
       return false;
     }
   },
 
-  async deleteAllDevices() {
+  async deleteAllBooks() {
     if (!isConfigured()) return false;
     try {
-      // PostgREST requires eq filters or a special header to delete all rows
-      // We will perform a delete with a wildcard filter (or simply match not.is.null on id)
-      const res = await fetch(`${SUPABASE_URL}/rest/v1/devices?id=not.is.null`, {
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/books?id=not.is.null`, {
         method: 'DELETE',
         headers: getHeaders()
       });
       if (res.ok) {
         return true;
       }
-      console.error('Supabase deleteAllDevices error:', await res.text());
+      console.error('Supabase deleteAllBooks error:', await res.text());
       return false;
     } catch (e) {
-      console.error('Supabase network error (deleteAllDevices):', e);
+      console.error('Supabase network error (deleteAllBooks):', e);
       return false;
     }
   }

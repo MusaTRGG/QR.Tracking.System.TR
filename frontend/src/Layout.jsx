@@ -17,8 +17,8 @@ export default function Layout() {
   const navLinks = [
     { path: '/', icon: 'dashboard', label: 'Ana Sayfa' },
     { path: '/scanner', icon: 'qr_code_scanner', label: 'Tarayıcı' },
-    { path: '/inventory', icon: 'inventory_2', label: 'Envanter' },
-    { path: '/laboratories', icon: 'science', label: 'Laboratuvar' },
+    { path: '/inventory', icon: 'menu_book', label: 'Kitaplar' },
+    { path: '/libraries', icon: 'local_library', label: 'Kütüphaneler' },
     { path: '/reports', icon: 'assessment', label: 'Raporlar' },
     { path: '/notifications', icon: 'notifications', label: 'Bildirimler' },
     { path: '/settings', icon: 'settings', label: 'Ayarlar' },
@@ -30,7 +30,7 @@ export default function Layout() {
       <header className="bg-primary text-on-primary font-headline-md text-headline-md docked full-width top-0 flex justify-between items-center h-header-height px-md w-full fixed z-40 shadow-sm">
         <div className="flex items-center gap-md">
           <Link to="/" className="font-headline-md text-headline-md font-bold text-on-primary hover:opacity-80 transition-opacity">
-            NESNE TAKİP
+            QR KÜTÜPHANE
           </Link>
         </div>
         <div className="flex items-center gap-md">
@@ -94,12 +94,12 @@ export default function Layout() {
           <span className="font-label-sm text-label-sm">Tarayıcı</span>
         </Link>
         <Link to="/inventory" className={`flex flex-col items-center justify-center ${location.pathname === '/inventory' ? 'text-primary font-bold' : 'text-on-surface-variant hover:text-primary'}`}>
-          <span className="material-symbols-outlined">inventory_2</span>
-          <span className="font-label-sm text-label-sm">Envanter</span>
+          <span className="material-symbols-outlined">menu_book</span>
+          <span className="font-label-sm text-label-sm">Kitaplar</span>
         </Link>
-        <Link to="/laboratories" className={`flex flex-col items-center justify-center ${location.pathname === '/laboratories' ? 'text-primary font-bold' : 'text-on-surface-variant hover:text-primary'}`}>
-          <span className="material-symbols-outlined">science</span>
-          <span className="font-label-sm text-label-sm">Lab</span>
+        <Link to="/libraries" className={`flex flex-col items-center justify-center ${location.pathname === '/libraries' ? 'text-primary font-bold' : 'text-on-surface-variant hover:text-primary'}`}>
+          <span className="material-symbols-outlined">local_library</span>
+          <span className="font-label-sm text-label-sm">Kütüphane</span>
         </Link>
         <Link to="/profile" className={`flex flex-col items-center justify-center ${location.pathname === '/profile' ? 'text-primary font-bold' : 'text-on-surface-variant hover:text-primary'}`}>
           <span className="material-symbols-outlined">person</span>

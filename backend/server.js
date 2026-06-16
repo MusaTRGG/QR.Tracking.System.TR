@@ -18,7 +18,7 @@ function readDB() {
     return JSON.parse(data);
   } catch (error) {
     console.error("Error reading database file, returning empty structure", error);
-    return { laboratories: [], devices: [] };
+    return { libraries: [], books: [] };
   }
 }
 
@@ -30,133 +30,137 @@ function writeDB(data) {
   }
 }
 
-// 1. Laboratories Endpoints
-app.get('/api/laboratories', (req, res) => {
+// 1. Libraries Endpoints
+app.get('/api/libraries', (req, res) => {
   const db = readDB();
-  res.json(db.laboratories || []);
+  res.json(db.libraries || []);
 });
 
-app.post('/api/laboratories', (req, res) => {
+app.post('/api/libraries', (req, res) => {
   const { name } = req.body;
   if (!name || typeof name !== 'string') {
-    return res.status(400).json({ error: "Geçersiz laboratuvar adı." });
+    return res.status(400).json({ error: "Geçersiz kütüphane adı." });
   }
   const db = readDB();
-  if (db.laboratories.some(l => l.toLowerCase() === name.trim().toLowerCase())) {
-    return res.status(400).json({ error: "Laboratuvar zaten mevcut." });
+  if (db.libraries.some(l => l.toLowerCase() === name.trim().toLowerCase())) {
+    return res.status(400).json({ error: "Kütüphane zaten mevcut." });
   }
-  db.laboratories.push(name.trim());
+  db.libraries.push(name.trim());
   writeDB(db);
-  res.json(db.laboratories);
+  res.json(db.libraries);
 });
 
-// 2. Devices Endpoints
-app.get('/api/devices', (req, res) => {
+// 2. Books Endpoints
+app.get('/api/books', (req, res) => {
   const db = readDB();
-  res.json(db.devices || []);
+  res.json(db.books || []);
 });
 
-app.get('/api/devices/:id', (req, res) => {
+app.get('/api/books/:id', (req, res) => {
   const db = readDB();
-  const found = db.devices.find(d => d.id === req.params.id);
+  const found = db.books.find(b => b.id === req.params.id);
   if (!found) {
-    return res.status(404).json({ error: "Cihaz bulunamadı." });
+    return res.status(404).json({ error: "Kitap bulunamadı." });
   }
   res.json(found);
 });
 
-app.post('/api/devices', (req, res) => {
-  const newDevice = req.body;
-  if (!newDevice || !newDevice.id || !newDevice.name) {
-    return res.status(400).json({ error: "Cihaz verisi eksik veya geçersiz." });
+app.post('/api/books', (req, res) => {
+  const newBook = req.body;
+  if (!newBook || !newBook.id || !newBook.title) {
+    return res.status(400).json({ error: "Kitap verisi eksik veya geçersiz." });
   }
   
   const db = readDB();
-  // Check if device already exists
-  const exists = db.devices.some(d => d.id === newDevice.id);
+  const exists = db.books.some(b => b.id === newBook.id);
   if (exists) {
-    return res.status(400).json({ error: "Bu ID'ye sahip bir cihaz zaten kayıtlı." });
+    return res.status(400).json({ error: "Bu ID'ye sahip bir kitap zaten kayıtlı." });
   }
   
-  db.devices.push(newDevice);
+  db.books.push(newBook);
   writeDB(db);
-  res.status(201).json(newDevice);
+  res.status(201).json(newBook);
 });
 
-app.put('/api/devices/:id', (req, res) => {
+app.put('/api/books/:id', (req, res) => {
   const updatedFields = req.body;
   const db = readDB();
-  const index = db.devices.findIndex(d => d.id === req.params.id);
+  const index = db.books.findIndex(b => b.id === req.params.id);
   if (index === -1) {
-    return res.status(404).json({ error: "Cihaz bulunamadı." });
+    return res.status(404).json({ error: "Kitap bulunamadı." });
   }
-  db.devices[index] = { ...db.devices[index], ...updatedFields };
+  db.books[index] = { ...db.books[index], ...updatedFields };
   writeDB(db);
-  res.json(db.devices[index]);
+  res.json(db.books[index]);
 });
 
-app.post('/api/devices/:id/logs', (req, res) => {
+app.post('/api/books/:id/logs', (req, res) => {
   const { log } = req.body;
   if (!log || !log.date || !log.type) {
     return res.status(400).json({ error: "Günlük verisi eksik veya geçersiz." });
   }
   const db = readDB();
-  const index = db.devices.findIndex(d => d.id === req.params.id);
+  const index = db.books.findIndex(b => b.id === req.params.id);
   if (index === -1) {
-    return res.status(404).json({ error: "Cihaz bulunamadı." });
+    return res.status(404).json({ error: "Kitap bulunamadı." });
   }
   
-  const currentDevice = db.devices[index];
+  const currentBook = db.books[index];
   
-  // Update state attributes depending on action
-  let updatedEfficiency = currentDevice.efficiency;
-  let updatedStatus = currentDevice.status;
-  let updatedLastMaintenance = currentDevice.lastMaintenance;
+  let updatedStatus = currentBook.status;
+  let updatedIsInLibrary = currentBook.is_in_library;
+  let updatedBorrowedBy = currentBook.borrowed_by;
+  let updatedBorrowedDate = currentBook.borrowed_date;
+  let updatedDaysToReturn = currentBook.days_to_return;
   
-  if (log.type === 'Arıza Bildirimi') {
-    updatedStatus = 'Arızalı';
-    updatedEfficiency = Math.floor(Math.random() * 20 + 30);
-  } else if (log.type === 'Bakım') {
-    updatedStatus = 'Operasyonel';
-    updatedEfficiency = 100;
-    updatedLastMaintenance = log.date.split(' ')[0] || new Date().toLocaleDateString('tr-TR');
-  } else if (log.type === 'Durum Güncelleme') {
-    updatedStatus = 'Operasyonel';
-    updatedEfficiency = 100;
+  if (log.type === 'Ödünç Alma') {
+    updatedStatus = 'Ödünç Verildi';
+    updatedIsInLibrary = false;
+    updatedBorrowedBy = log.user;
+    updatedBorrowedDate = log.date.split(' ')[0] || new Date().toLocaleDateString('tr-TR');
+    updatedDaysToReturn = log.daysToReturn || 14; // Default 14 days
+  } else if (log.type === 'İade Etme') {
+    updatedStatus = 'Müsait';
+    updatedIsInLibrary = true;
+    updatedBorrowedBy = null;
+    updatedBorrowedDate = null;
+    updatedDaysToReturn = null;
   }
   
-  const updatedLogs = [log, ...(currentDevice.logs || [])];
+  const updatedLogs = [log, ...(currentBook.logs || [])];
   
-  db.devices[index] = {
-    ...currentDevice,
+  db.books[index] = {
+    ...currentBook,
     status: updatedStatus,
-    efficiency: updatedEfficiency,
-    lastMaintenance: updatedLastMaintenance,
+    is_in_library: updatedIsInLibrary,
+    borrowed_by: updatedBorrowedBy,
+    borrowed_date: updatedBorrowedDate,
+    days_to_return: updatedDaysToReturn,
     logs: updatedLogs
   };
   
   writeDB(db);
-  res.json(db.devices[index]);
+  res.json(db.books[index]);
 });
 
-// 3. Delete All Devices Endpoint
-app.delete('/api/devices', (req, res) => {
+// 3. Delete All Books Endpoint
+app.delete('/api/books', (req, res) => {
   const db = readDB();
-  db.devices = [];
+  db.books = [];
   writeDB(db);
-  res.json({ message: "Tüm cihazlar başarıyla silindi." });
+  res.json({ message: "Tüm kitaplar başarıyla silindi." });
 });
 
-// 4. Delete Device Endpoint
-app.delete('/api/devices/:id', (req, res) => {
+// 4. Delete Book Endpoint
+app.delete('/api/books/:id', (req, res) => {
   const db = readDB();
-  const exists = db.devices.some(d => d.id === req.params.id);
+  const exists = db.books.some(b => b.id === req.params.id);
   if (!exists) {
-    return res.status(404).json({ error: "Cihaz bulunamadı." });
+    return res.status(404).json({ error: "Kitap bulunamadı." });
   }
-  db.devices = db.devices.filter(d => d.id !== req.params.id);
+  db.books = db.books.filter(b => b.id !== req.params.id);
   writeDB(db);
-  res.json({ message: "Cihaz başarıyla silindi." });
+  res.json({ message: "Kitap başarıyla silindi." });
 });
 
 app.listen(PORT, () => {
