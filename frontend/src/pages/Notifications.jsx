@@ -6,10 +6,10 @@ export default function Notifications() {
   const notifications = [
     {
       id: 1,
-      title: 'PLC-S712-001 Kritik Hata!',
-      message: 'Aşırı ısınma algılandı. Ünite güvenli moda alındı. Konum: Lab-02 Bölümü.',
+      title: 'Kitap İade Süresi Gecikti!',
+      message: 'Nutuk (ISBN: NUT-1927) teslim tarihi 3 gün aştı. Alıcı: Ahmet Yılmaz. İletişime geçiniz.',
       time: 'Bugün • 15:45',
-      type: 'Kritik',
+      type: 'Gecikmiş',
       icon: 'warning',
       colorClass: 'border-error',
       iconBg: 'bg-error-container',
@@ -18,11 +18,11 @@ export default function Notifications() {
     },
     {
       id: 2,
-      title: 'Bakım Gecikti',
-      message: 'Mikroskop - 05 için periyodik bakım süresi 48 saat aşıldı.',
+      title: 'İade Yaklaşıyor',
+      message: 'Simyacı kitabının iade edilmesine 24 saatten az süre kaldı. Alıcı: Zeynep Demir.',
       time: 'Bugün • 14:32',
       type: 'Kritik',
-      icon: 'engineering',
+      icon: 'alarm',
       colorClass: 'border-tertiary',
       iconBg: 'bg-tertiary-fixed',
       iconColor: 'text-tertiary',
@@ -30,11 +30,11 @@ export default function Notifications() {
     },
     {
       id: 3,
-      title: 'Lens Değişimi',
-      message: 'Mikroskop - 05 için 40x objektif lens başarıyla takıldı.',
+      title: 'Yeni Kitap Eklendi',
+      message: 'Suç ve Ceza (Fyodor Dostoyevski) kütüphane envanterine başarıyla eklendi.',
       time: 'Bugün • 13:10',
-      type: 'Bilgi',
-      icon: 'build',
+      type: 'Sistem',
+      icon: 'library_add',
       colorClass: 'border-primary',
       iconBg: 'bg-primary-fixed',
       iconColor: 'text-primary',
@@ -42,10 +42,10 @@ export default function Notifications() {
     },
     {
       id: 4,
-      title: 'Bakım Tamamlandı',
-      message: 'Hassas terazi kalibrasyon işlemi başarıyla tamamlandı.',
+      title: 'Başarılı İade Alımı',
+      message: 'Devlet kitabı Beylikdüzü Kütüphanesi şubesine başarıyla iade edildi ve rafa kaldırıldı.',
       time: 'Dün • 16:45',
-      type: 'Başarılı',
+      type: 'İade',
       icon: 'check_circle',
       colorClass: 'border-secondary',
       iconBg: 'bg-secondary-container',
@@ -54,11 +54,11 @@ export default function Notifications() {
     },
     {
       id: 5,
-      title: 'Konum Değişikliği',
-      message: 'Santrifüj ünitesi Laboratuvar A\'dan Laboratuvar B\'ye taşındı.',
+      title: 'Şubeler Arası Transfer',
+      message: 'Dune serisi Esenyurt Kütüphanesi\'nden Avcılar Kütüphanesi şubesine sevk edildi.',
       time: 'Dün • 11:20',
-      type: 'Hareket',
-      icon: 'location_on',
+      type: 'Transfer',
+      icon: 'local_shipping',
       colorClass: 'border-outline-variant',
       iconBg: 'bg-surface-container-highest',
       iconColor: 'text-on-surface-variant',
@@ -68,17 +68,18 @@ export default function Notifications() {
 
   const filteredNotifications = notifications.filter(n => {
     if (activeFilter === 'Hepsi') return true;
-    if (activeFilter === 'Okunmamış') return n.id === 1 || n.id === 2 || n.id === 3; // Mock logic
+    if (activeFilter === 'Okunmamış') return n.id === 1 || n.id === 2; // Mock logic
+    if (activeFilter === 'Gecikmiş') return n.type === 'Gecikmiş' || n.type === 'Kritik';
     return n.type === activeFilter;
   });
 
   const filterTabs = [
-    { label: 'Hepsi', count: 8 },
-    { label: 'Okunmamış', count: 3 },
-    { label: 'Bakım', count: 3 },
-    { label: 'Arıza', count: 2 },
-    { label: 'Hareket', count: 1 },
-    { label: 'Sistem', count: 2 },
+    { label: 'Hepsi', count: 5 },
+    { label: 'Okunmamış', count: 2 },
+    { label: 'Gecikmiş', count: 2 },
+    { label: 'İade', count: 1 },
+    { label: 'Transfer', count: 1 },
+    { label: 'Sistem', count: 1 },
   ];
 
   return (
@@ -88,7 +89,7 @@ export default function Notifications() {
         <div className="flex justify-between items-center">
           <div className="flex items-center gap-sm">
             <span className="material-symbols-outlined text-primary text-3xl">notifications</span>
-            <h1 className="font-headline-lg text-headline-lg text-on-surface">Bildirimler</h1>
+            <h1 className="font-headline-lg text-headline-lg text-on-surface">Bildirimler & Duyurular</h1>
           </div>
           <div className="flex items-center gap-sm">
             <button className="bg-surface-container-lowest border border-outline px-md py-sm rounded-lg font-label-md text-label-md text-primary hover:bg-surface-container transition-colors">
@@ -100,7 +101,7 @@ export default function Notifications() {
             </button>
           </div>
         </div>
-        <p className="font-body-md text-body-md text-on-surface-variant">Toplam {notifications.length} bildirim</p>
+        <p className="font-body-md text-body-md text-on-surface-variant">Toplam {notifications.length} bildirim mevcut</p>
 
         {/* Filter Tabs */}
         <div className="flex gap-sm overflow-x-auto pb-xs scrollbar-hide">
@@ -128,7 +129,7 @@ export default function Notifications() {
                 <h3 className="font-label-md text-label-md text-on-surface">{notif.title}</h3>
                 <div className="flex items-center gap-sm">
                   <span className={`${notif.badgeBg} text-[10px] font-bold px-sm py-[2px] rounded uppercase`}>{notif.type}</span>
-                  <div className="w-2 h-2 rounded-full bg-primary"></div>
+                  {(notif.id === 1 || notif.id === 2) && <div className="w-2 h-2 rounded-full bg-primary"></div>}
                 </div>
               </div>
               <p className="font-body-md text-body-md text-on-surface-variant">{notif.message}</p>
@@ -146,36 +147,36 @@ export default function Notifications() {
       <div className="mt-xl grid grid-cols-1 md:grid-cols-2 gap-md">
         <div className="bg-primary text-on-primary p-lg rounded-xl overflow-hidden relative shadow-lg">
           <div className="relative z-10">
-            <h4 className="font-headline-md text-headline-md mb-sm">Haftalık Arıza Özeti</h4>
-            <p className="font-body-md text-body-md opacity-90 mb-md">Bu hafta toplam 2 kritik arıza raporlandı. Ortalama müdahale süresi 12 dakika azaldı.</p>
+            <h4 className="font-headline-md text-headline-md mb-sm">Haftalık Ödünç & İade Özeti</h4>
+            <p className="font-body-md text-body-md opacity-90 mb-md">Bu hafta kütüphanelerimizden toplam 42 kitap ödünç alındı. Zamanında iade oranı %94 seviyesinde.</p>
             <div className="flex gap-md">
               <div>
-                <p className="font-label-sm text-label-sm opacity-70 uppercase">Müdahale</p>
-                <p className="font-headline-lg text-headline-lg">18 dk</p>
+                <p className="font-label-sm text-label-sm opacity-70 uppercase">Aktif Ödünç</p>
+                <p className="font-headline-lg text-headline-lg">18 Kitap</p>
               </div>
               <div>
-                <p className="font-label-sm text-label-sm opacity-70 uppercase">İyileşme</p>
-                <p className="font-headline-lg text-headline-lg text-secondary-fixed">%14</p>
+                <p className="font-label-sm text-label-sm opacity-70 uppercase">Zamanında İade</p>
+                <p className="font-headline-lg text-headline-lg text-secondary-fixed">%94</p>
               </div>
             </div>
           </div>
-          <span className="material-symbols-outlined absolute -right-4 -bottom-4 text-[120px] opacity-10">analytics</span>
+          <span className="material-symbols-outlined absolute -right-4 -bottom-4 text-[120px] opacity-10">auto_stories</span>
         </div>
         
         <div className="bg-white border border-outline-variant p-lg rounded-xl shadow-sm flex flex-col">
-          <h4 className="font-headline-md text-headline-md text-on-surface mb-sm">Ekip Durumu</h4>
+          <h4 className="font-headline-md text-headline-md text-on-surface mb-sm">Kütüphane Görevlileri</h4>
           <div className="flex items-center gap-md">
             <div className="flex -space-x-3">
-              <img alt="Staff 1" className="w-10 h-10 rounded-full border-2 border-white object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD5h4XXsG1TWPCy8N1Z3MdNprWSID0UWfWXh_WrSNRSFRy00w5Gsen5g62qCefeEDPXbItW0OteOifaRKGtPtPXfnVcjQWBj3tPSAMmZ1OR2TCBbRhinQl1TVokKvNjH7xCXLEqBN-dhMJFbOUO79Pw95tjkx5DxY6IP_uioCeoMe-xv5nM-AEmZOTvr3oZ2x4vsYodiVxb5vX-kDi_LJEIMC4kUZlCopFc_igQ7nP4n56kr7CG5Nmx6reKzp11odl9pmeTpum_ERU"/>
-              <img alt="Staff 2" className="w-10 h-10 rounded-full border-2 border-white object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCqqOClkHtu67ntKEQneIXELsV-y_7Th77vkugDlnQ0plgUskduZtw5j8Wfw38YliGbcSV1E7gZ_JQBx2abrF7r2NlMP9XwDpg18SAntRW6eM8rO6Dc0DIM8sNIaylLZ9qI8kRTDArBd1rCl2MyTi3i2hni_bMHMZ8yVtFnCbS7NhLMbuVCYAkaj7JA8I_miwFwD3UUjhLv4v7gZ2ZOZoSJXTyY_fSjK4j7dtLsouAw2Rl5GcAo6jLmZZcFHqvq_zIc8JyBZDIp2WQ"/>
-              <div className="w-10 h-10 rounded-full border-2 border-white bg-surface-container-highest flex items-center justify-center text-label-sm text-on-surface-variant font-bold">+4</div>
+              <img alt="Staff 1" className="w-10 h-10 rounded-full border-2 border-white object-cover" src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=100&auto=format&fit=crop&q=80"/>
+              <img alt="Staff 2" className="w-10 h-10 rounded-full border-2 border-white object-cover" src="https://images.unsplash.com/photo-1560250097-0b93528c311a?w=100&auto=format&fit=crop&q=80"/>
+              <div className="w-10 h-10 rounded-full border-2 border-white bg-surface-container-highest flex items-center justify-center text-label-sm text-on-surface-variant font-bold">+2</div>
             </div>
             <div className="font-body-md text-body-md text-on-surface-variant">
-              Şu an aktif 6 teknik personel sahada.
+              Şu an 4 aktif görevli şubelerde hizmet vermektedir.
             </div>
           </div>
           <button onClick={() => setRosterModalOpen(true)} className="mt-auto w-full py-sm bg-surface-container text-primary font-label-md text-label-md rounded-lg hover:bg-surface-container-high transition-colors">
-            Nöbet Çizelgesini Görüntüle
+            Görevli Nöbet Çizelgesini Görüntüle
           </button>
         </div>
       </div>
@@ -185,7 +186,7 @@ export default function Notifications() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-md">
             <div className="bg-surface border border-outline-variant rounded-xl w-full max-w-[600px] overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-200">
                 <div className="bg-primary text-on-primary px-lg py-md flex justify-between items-center">
-                    <h3 className="font-headline-md text-headline-md">Haftalık Nöbet Çizelgesi</h3>
+                    <h3 className="font-headline-md text-headline-md">Haftalık Görevli Nöbet Çizelgesi</h3>
                     <button onClick={() => setRosterModalOpen(false)} className="hover:opacity-70">
                         <span className="material-symbols-outlined">close</span>
                     </button>
@@ -195,15 +196,15 @@ export default function Notifications() {
                         <thead>
                             <tr className="border-b border-outline-variant font-label-sm text-on-surface-variant">
                                 <th className="py-sm">Gün</th>
-                                <th className="py-sm">08:00 - 16:00</th>
-                                <th className="py-sm">16:00 - 00:00</th>
-                                <th className="py-sm">00:00 - 08:00</th>
+                                <th className="py-sm">Beylikdüzü Şubesi</th>
+                                <th className="py-sm">Esenyurt Şubesi</th>
+                                <th className="py-sm">Avcılar Şubesi</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-surface-container-highest">
-                            <tr><td className="py-sm font-label-md text-on-surface">Pazartesi</td><td className="py-sm text-body-sm text-on-surface-variant">Ahmet Y.</td><td className="py-sm text-body-sm text-on-surface-variant">Mehmet K.</td><td className="py-sm text-body-sm text-on-surface-variant">Ali V.</td></tr>
-                            <tr><td className="py-sm font-label-md text-on-surface">Salı</td><td className="py-sm text-body-sm text-on-surface-variant">Zeynep B.</td><td className="py-sm text-body-sm text-on-surface-variant">Ahmet Y.</td><td className="py-sm text-body-sm text-on-surface-variant">Mehmet K.</td></tr>
-                            <tr><td className="py-sm font-label-md text-on-surface">Çarşamba</td><td className="py-sm text-body-sm text-on-surface-variant">Ali V.</td><td className="py-sm text-body-sm text-on-surface-variant">Zeynep B.</td><td className="py-sm text-body-sm text-on-surface-variant">Ahmet Y.</td></tr>
+                        <tbody className="divide-y divide-surface-container-highest text-on-surface">
+                            <tr><td className="py-sm font-label-md">Pazartesi</td><td className="py-sm text-body-sm text-on-surface-variant">Ahmet Yılmaz</td><td className="py-sm text-body-sm text-on-surface-variant">Mehmet Kaya</td><td className="py-sm text-body-sm text-on-surface-variant">Ali Veli</td></tr>
+                            <tr><td className="py-sm font-label-md">Salı</td><td className="py-sm text-body-sm text-on-surface-variant">Zeynep Demir</td><td className="py-sm text-body-sm text-on-surface-variant">Ahmet Yılmaz</td><td className="py-sm text-body-sm text-on-surface-variant">Mehmet Kaya</td></tr>
+                            <tr><td className="py-sm font-label-md">Çarşamba</td><td className="py-sm text-body-sm text-on-surface-variant">Ali Veli</td><td className="py-sm text-body-sm text-on-surface-variant">Zeynep Demir</td><td className="py-sm text-body-sm text-on-surface-variant">Ahmet Yılmaz</td></tr>
                         </tbody>
                     </table>
                 </div>

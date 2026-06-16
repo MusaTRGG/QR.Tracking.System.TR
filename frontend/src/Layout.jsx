@@ -54,7 +54,7 @@ export default function Layout() {
       </header>
 
       {/* SideNavBar */}
-      <aside className="hidden md:flex flex-col p-md gap-sm w-sidebar-width h-[calc(100vh-64px)] bg-surface fixed left-0 top-header-height border-r border-outline-variant z-30">
+      <aside className="hidden md:flex flex-col p-md gap-sm w-sidebar-width h-[calc(100vh-64px)] bg-[#0f172a] fixed left-0 top-header-height border-r border-[#1e293b] z-30 text-slate-200">
         <nav className="flex flex-col gap-xs flex-grow">
           {navLinks.map((link) => {
             const isActive = location.pathname === link.path;
@@ -62,7 +62,7 @@ export default function Layout() {
               <Link 
                 key={link.path} 
                 to={link.path} 
-                className={`flex items-center gap-md px-md py-sm rounded-lg transition-colors duration-200 ${isActive ? 'bg-primary-container text-on-primary-container border-l-4 border-primary' : 'text-on-surface-variant hover:bg-surface-container-high'}`}
+                className={`flex items-center gap-md px-md py-sm rounded-lg transition-all duration-200 ${isActive ? 'bg-primary text-white shadow-md font-semibold' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}
               >
                 <span className="material-symbols-outlined">{link.icon}</span>
                 <span className="font-label-md text-label-md">{link.label}</span>
@@ -70,8 +70,8 @@ export default function Layout() {
             )
           })}
         </nav>
-        <div className="mt-auto pt-md border-t border-outline-variant">
-          <button onClick={handleLogout} className="w-full flex items-center gap-sm px-sm py-sm text-error hover:bg-error-container/20 rounded-lg transition-colors font-label-md text-label-md">
+        <div className="mt-auto pt-md border-t border-slate-800">
+          <button onClick={handleLogout} className="w-full flex items-center gap-sm px-sm py-sm text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors font-label-md text-label-md">
             <span className="material-symbols-outlined">logout</span>
             Çıkış Yap
           </button>
