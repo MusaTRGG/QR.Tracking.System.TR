@@ -17,8 +17,8 @@ export default function Layout() {
   const navLinks = [
     { path: '/', icon: 'dashboard', label: 'Ana Sayfa' },
     { path: '/scanner', icon: 'qr_code_scanner', label: 'Tarayıcı' },
-    { path: '/inventory', icon: 'menu_book', label: 'Kitaplar' },
-    { path: '/libraries', icon: 'local_library', label: 'Kütüphaneler' },
+    { path: '/inventory', icon: 'inventory_2', label: 'Envanter' },
+    { path: '/laboratories', icon: 'science', label: 'Laboratuvar' },
     { path: '/reports', icon: 'assessment', label: 'Raporlar' },
     { path: '/notifications', icon: 'notifications', label: 'Bildirimler' },
     { path: '/settings', icon: 'settings', label: 'Ayarlar' },
@@ -30,7 +30,7 @@ export default function Layout() {
       <header className="bg-primary text-on-primary font-headline-md text-headline-md docked full-width top-0 flex justify-between items-center h-header-height px-md w-full fixed z-40 shadow-sm">
         <div className="flex items-center gap-md">
           <Link to="/" className="font-headline-md text-headline-md font-bold text-on-primary hover:opacity-80 transition-opacity">
-            QR KÜTÜPHANE
+            NESNE TAKİP
           </Link>
         </div>
         <div className="flex items-center gap-md">
@@ -54,7 +54,7 @@ export default function Layout() {
       </header>
 
       {/* SideNavBar */}
-      <aside className="hidden md:flex flex-col p-md gap-sm w-sidebar-width h-[calc(100vh-64px)] bg-[#0f172a] fixed left-0 top-header-height border-r border-[#1e293b] z-30 text-slate-200">
+      <aside className="hidden md:flex flex-col p-md gap-sm w-sidebar-width h-[calc(100vh-64px)] bg-surface fixed left-0 top-header-height border-r border-outline-variant z-30">
         <nav className="flex flex-col gap-xs flex-grow">
           {navLinks.map((link) => {
             const isActive = location.pathname === link.path;
@@ -62,7 +62,7 @@ export default function Layout() {
               <Link 
                 key={link.path} 
                 to={link.path} 
-                className={`flex items-center gap-md px-md py-sm rounded-lg transition-all duration-200 ${isActive ? 'bg-primary text-white shadow-md font-semibold' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}
+                className={`flex items-center gap-md px-md py-sm rounded-lg transition-colors duration-200 ${isActive ? 'bg-primary-container text-on-primary-container border-l-4 border-primary' : 'text-on-surface-variant hover:bg-surface-container-high'}`}
               >
                 <span className="material-symbols-outlined">{link.icon}</span>
                 <span className="font-label-md text-label-md">{link.label}</span>
@@ -70,8 +70,8 @@ export default function Layout() {
             )
           })}
         </nav>
-        <div className="mt-auto pt-md border-t border-slate-800">
-          <button onClick={handleLogout} className="w-full flex items-center gap-sm px-sm py-sm text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors font-label-md text-label-md">
+        <div className="mt-auto pt-md border-t border-outline-variant">
+          <button onClick={handleLogout} className="w-full flex items-center gap-sm px-sm py-sm text-error hover:bg-error-container/20 rounded-lg transition-colors font-label-md text-label-md">
             <span className="material-symbols-outlined">logout</span>
             Çıkış Yap
           </button>
@@ -94,12 +94,12 @@ export default function Layout() {
           <span className="font-label-sm text-label-sm">Tarayıcı</span>
         </Link>
         <Link to="/inventory" className={`flex flex-col items-center justify-center ${location.pathname === '/inventory' ? 'text-primary font-bold' : 'text-on-surface-variant hover:text-primary'}`}>
-          <span className="material-symbols-outlined">menu_book</span>
-          <span className="font-label-sm text-label-sm">Kitaplar</span>
+          <span className="material-symbols-outlined">inventory_2</span>
+          <span className="font-label-sm text-label-sm">Envanter</span>
         </Link>
-        <Link to="/libraries" className={`flex flex-col items-center justify-center ${location.pathname === '/libraries' ? 'text-primary font-bold' : 'text-on-surface-variant hover:text-primary'}`}>
-          <span className="material-symbols-outlined">local_library</span>
-          <span className="font-label-sm text-label-sm">Kütüphane</span>
+        <Link to="/laboratories" className={`flex flex-col items-center justify-center ${location.pathname === '/laboratories' ? 'text-primary font-bold' : 'text-on-surface-variant hover:text-primary'}`}>
+          <span className="material-symbols-outlined">science</span>
+          <span className="font-label-sm text-label-sm">Lab</span>
         </Link>
         <Link to="/profile" className={`flex flex-col items-center justify-center ${location.pathname === '/profile' ? 'text-primary font-bold' : 'text-on-surface-variant hover:text-primary'}`}>
           <span className="material-symbols-outlined">person</span>

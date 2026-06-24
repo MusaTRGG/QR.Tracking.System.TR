@@ -1,8 +1,8 @@
 {
-  "libraries": [
-    "Beylikdüzü Kütüphanesi",
-    "Esenyurt Kütüphanesi",
-    "Avcılar Kütüphanesi"
+  "laboratories": [
+    "PLC Labı",
+    "PC Labı",
+    "Elektronik Labı"
   ],
-  "books": []
+  "devices": []
 }

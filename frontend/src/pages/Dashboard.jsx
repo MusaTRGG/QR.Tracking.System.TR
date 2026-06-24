@@ -4,16 +4,16 @@ import { QRCodeSVG } from 'qrcode.react';
 import { supabaseService } from '../supabaseService';
 
 export default function Dashboard() {
-  const [books, setBooks] = useState([]);
+  const [devices, setDevices] = useState([]);
   
-  const fetchBooks = async () => {
+  const fetchDevices = async () => {
     let success = false;
     try {
-      const res = await fetch('/api/books');
+      const res = await fetch('/api/devices');
       if (res.ok) {
         const data = await res.json();
-        setBooks(data);
-        localStorage.setItem('qr-books', JSON.stringify(data));
+        setDevices(data);
+        localStorage.setItem('qr-devices', JSON.stringify(data));
         success = true;
       }
     } catch (e) {
@@ -22,56 +22,46 @@ export default function Dashboard() {
     
     if (!success) {
       if (supabaseService.isConfigured()) {
-        const cloudData = await supabaseService.getBooks();
+        const cloudData = await supabaseService.getDevices();
         if (cloudData) {
-          setBooks(cloudData);
-          localStorage.setItem('qr-books', JSON.stringify(cloudData));
+          setDevices(cloudData);
+          localStorage.setItem('qr-devices', JSON.stringify(cloudData));
           success = true;
         }
       }
     }
 
     if (!success) {
-      const saved = localStorage.getItem('qr-books');
+      const saved = localStorage.getItem('qr-devices');
       if (saved) {
-        setBooks(JSON.parse(saved));
+        setDevices(JSON.parse(saved));
       }
     }
   };
 
   useEffect(() => {
-    fetchBooks();
+    fetchDevices();
   }, []);
 
-  const createBook = async () => {
-    const defaultBooks = [
-      { title: 'Nutuk', author: 'Mustafa Kemal Atatürk', location: 'Beylikdüzü Kütüphanesi', specs: 'Türkiye Cumhuriyeti\'nin kuruluş belgesi niteliğindeki tarihi eser.' },
-      { title: 'Suç ve Ceza', author: 'Fyodor Dostoyevski', location: 'Esenyurt Kütüphanesi', specs: 'Raskolnikov adlı bir gencin işlediği cinayet ve sonrasındaki vicdan azabını konu alan klasik roman.' },
-      { title: 'Simyacı', author: 'Paulo Coelho', location: 'Avcılar Kütüphanesi', specs: 'Kendi kişisel menkıbesini gerçekleştirmek üzere yola çıkan Endülüslü çoban Santiago\'nun öyküsü.' }
-    ];
-    
-    const randomTemplate = defaultBooks[Math.floor(Math.random() * defaultBooks.length)];
-    const newId = `BK-${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}`;
-    
-    const newBook = {
+  const createDevice = async () => {
+    const newId = `PLC-${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}`;
+    const newDevice = {
       id: newId,
-      title: randomTemplate.title,
-      author: randomTemplate.author,
-      location: randomTemplate.location,
-      status: 'Müsait',
-      is_in_library: true,
-      borrowed_by: null,
-      borrowed_date: null,
-      days_to_return: null,
+      name: `Siemens S7-1200 PLC`,
+      serial: `SN-${Math.floor(Math.random() * 1000000)}`,
+      location: `PLC Labı`,
+      status: 'Operasyonel',
+      efficiency: Math.floor(Math.random() * 20 + 80), // 80-100
+      lastMaintenance: new Date().toLocaleDateString('tr-TR'),
       image: '',
-      summary: randomTemplate.specs,
-      manager: 'Kütüphane Görevlisi',
+      specs: '14 Dijital Giriş (24V DC), 10 Dijital Çıkış (Röle), 2 Analog Giriş (0-10V DC), Entegre Profinet Portu, 100 KB çalışma belleği.',
+      manager: 'Ahmet Y.',
       date: new Date().toLocaleDateString('tr-TR'),
       logs: [
         {
           date: new Date().toLocaleString('tr-TR'),
           type: 'Sistem',
-          description: 'Kitap kütüphane envanterine kaydedildi.',
+          description: 'Test cihazı otomatik olarak üretildi.',
           user: 'Sistem'
         }
       ]
@@ -79,46 +69,46 @@ export default function Dashboard() {
     
     let success = false;
     try {
-      const res = await fetch('/api/books', {
+      const res = await fetch('/api/devices', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newBook)
+        body: JSON.stringify(newDevice)
       });
       if (res.ok) {
         const added = await res.json();
-        setBooks(prev => [added, ...prev]);
+        setDevices(prev => [added, ...prev]);
         success = true;
       }
     } catch (e) {
-      console.warn("Backend test book creation failed, trying Supabase", e);
+      console.warn("Backend test device creation failed, trying Supabase", e);
     }
 
     if (!success && supabaseService.isConfigured()) {
-      const added = await supabaseService.addBook(newBook);
+      const added = await supabaseService.addDevice(newDevice);
       if (added) {
-        setBooks(prev => [added, ...prev]);
+        setDevices(prev => [added, ...prev]);
         success = true;
       }
     }
     
-    const saved = localStorage.getItem('qr-books');
-    const localBooks = saved ? JSON.parse(saved) : [];
-    const updated = [newBook, ...localBooks];
-    localStorage.setItem('qr-books', JSON.stringify(updated));
+    const saved = localStorage.getItem('qr-devices');
+    const localDevs = saved ? JSON.parse(saved) : [];
+    const updated = [newDevice, ...localDevs];
+    localStorage.setItem('qr-devices', JSON.stringify(updated));
     if (!success) {
-      setBooks(updated);
+      setDevices(updated);
     }
   };
 
-  const clearBooks = async () => {
+  const clearDevices = async () => {
     if (window.confirm("Tüm envanteri temizlemek istediğinize emin misiniz?")) {
       let success = false;
       try {
-        const res = await fetch('/api/books', {
+        const res = await fetch('/api/devices', {
           method: 'DELETE'
         });
         if (res.ok) {
-          setBooks([]);
+          setDevices([]);
           success = true;
         }
       } catch (e) {
@@ -126,25 +116,20 @@ export default function Dashboard() {
       }
 
       if (!success && supabaseService.isConfigured()) {
-        const deleted = await supabaseService.deleteAllBooks();
+        const deleted = await supabaseService.deleteAllDevices();
         if (deleted) {
-          setBooks([]);
+          setDevices([]);
           success = true;
         }
       }
       
-      setBooks([]);
-      localStorage.removeItem('qr-books');
+      setDevices([]);
+      localStorage.removeItem('qr-devices');
     }
   };
 
-  // Stats calculations
-  const totalBooks = books.length;
-  const borrowedBooks = books.filter(b => b.status === 'Ödünç Verildi').length;
-  const availableBooks = books.filter(b => b.status === 'Müsait').length;
-
   // Use the current local IP/hostname to generate QR
-  const baseUrl = `${window.location.protocol}//${window.location.host}/book`;
+  const baseUrl = `${window.location.protocol}//${window.location.host}/device`;
 
   return (
     <div className="max-w-[1400px] mx-auto">
@@ -152,38 +137,34 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-md mb-xl">
         <div className="bg-primary text-on-primary p-lg rounded-xl shadow-lg relative overflow-hidden">
             <div className="relative z-10">
-                <h4 className="font-headline-md text-headline-md mb-sm">Toplam Kitap</h4>
-                <p className="font-headline-xl text-headline-xl">{totalBooks}</p>
-                <p className="font-body-sm text-body-sm opacity-80 mt-xs">Kütüphane sisteminde kayıtlı toplam kitap</p>
+                <h4 className="font-headline-md text-headline-md mb-sm">Toplam Cihaz</h4>
+                <p className="font-headline-xl text-headline-xl">{devices.length > 0 ? devices.length : 0}</p>
+                <p className="font-body-sm text-body-sm opacity-80 mt-xs">Sistemde kayıtlı aktif envanter sayısı</p>
             </div>
-            <span className="material-symbols-outlined absolute -right-4 -bottom-4 text-[120px] opacity-10">library_books</span>
+            <span className="material-symbols-outlined absolute -right-4 -bottom-4 text-[120px] opacity-10">inventory_2</span>
         </div>
         
-        <div className="bg-surface-container-lowest border border-outline-variant p-lg rounded-xl shadow-sm flex justify-between items-center">
-            <div>
-                <h4 className="font-headline-md text-headline-md text-on-surface mb-sm">Müsait / Ödünç Durumu</h4>
-                <div className="flex gap-md mt-md">
-                    <div>
-                        <p className="font-label-sm text-label-sm text-success">MÜSAİT</p>
-                        <p className="font-headline-lg text-headline-lg text-success">{availableBooks}</p>
-                    </div>
-                    <div>
-                        <p className="font-label-sm text-label-sm text-error">ÖDÜNÇ</p>
-                        <p className="font-headline-lg text-headline-lg text-error">{borrowedBooks}</p>
-                    </div>
+        <div className="bg-surface-container-lowest border border-outline-variant p-lg rounded-xl shadow-sm">
+            <h4 className="font-headline-md text-headline-md text-on-surface mb-sm">Sistem Durumu</h4>
+            <div className="flex items-center gap-md mt-md">
+                <div className="w-12 h-12 rounded-full bg-secondary-container flex items-center justify-center">
+                    <span className="material-symbols-outlined text-secondary">check_circle</span>
+                </div>
+                <div>
+                    <p className="font-label-md text-label-md text-secondary">Tüm Sistemler Normal</p>
+                    <p className="font-body-sm text-body-sm text-on-surface-variant">Son kontrol: 2 dk önce</p>
                 </div>
             </div>
-            <span className="material-symbols-outlined text-outline-variant text-[50px] opacity-35">menu_book</span>
         </div>
 
         <div className="bg-surface-container-lowest border border-outline-variant p-lg rounded-xl shadow-sm">
             <h4 className="font-headline-md text-headline-md text-on-surface mb-sm">Hızlı İşlemler</h4>
             <div className="flex flex-col gap-sm">
-                <button onClick={createBook} className="w-full flex items-center justify-center gap-xs bg-primary text-on-primary hover:opacity-90 px-md py-sm rounded-lg font-label-md text-label-md transition-colors cursor-pointer">
+                <button onClick={createDevice} className="w-full flex items-center justify-center gap-xs bg-primary text-on-primary hover:opacity-90 px-md py-sm rounded-lg font-label-md text-label-md transition-colors">
                     <span className="material-symbols-outlined">add</span>
-                    Yeni Test Kitabı Üret
+                    Yeni Test Cihazı Üret
                 </button>
-                <button onClick={clearBooks} className="w-full flex items-center justify-center gap-xs border border-error text-error hover:bg-error-container/20 px-md py-sm rounded-lg font-label-md text-label-md transition-colors cursor-pointer">
+                <button onClick={clearDevices} className="w-full flex items-center justify-center gap-xs border border-error text-error hover:bg-error-container/20 px-md py-sm rounded-lg font-label-md text-label-md transition-colors">
                     <span className="material-symbols-outlined">delete</span>
                     Envanteri Temizle
                 </button>
@@ -193,39 +174,38 @@ export default function Dashboard() {
 
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-md mb-lg">
         <div>
-          <h2 className="font-headline-lg text-headline-lg text-on-surface">Kütüphane Kitapları & QR Kodlar</h2>
-          <p className="font-body-md text-body-md text-on-surface-variant mt-1">Kitap QR kodlarını taratarak veya yazdırarak durum kontrolü yapabilirsiniz.</p>
+          <h2 className="font-headline-lg text-headline-lg text-on-surface">Son Eklenen Cihazlar & QR Kodlar</h2>
+          <p className="font-body-md text-body-md text-on-surface-variant mt-1">Hızlı erişim ve test paneli</p>
         </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-grid-gutter">
-        {books.map(book => (
-          <div key={book.id} className="bg-surface-container-lowest border border-outline-variant rounded-xl p-md shadow-sm flex flex-col items-center hover:shadow-md transition-shadow">
+        {devices.map(device => (
+          <div key={device.id} className="bg-surface-container-lowest border border-outline-variant rounded-xl p-md shadow-sm flex flex-col items-center hover:shadow-md transition-shadow">
             <div className="w-full flex justify-between items-start mb-md border-b border-surface-container-low pb-sm">
-                <div className="flex-grow pr-xs">
-                    <h3 className="font-label-md text-label-md text-on-surface">{book.id}</h3>
-                    <p className="text-body-sm text-on-surface font-semibold line-clamp-1">{book.title}</p>
-                    <p className="text-[10px] text-on-surface-variant line-clamp-1">{book.author}</p>
+                <div>
+                    <h3 className="font-label-md text-label-md text-on-surface">{device.id}</h3>
+                    <p className="text-body-sm text-on-surface-variant line-clamp-1">{device.name}</p>
                 </div>
-                <div className={`px-sm py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${book.status === 'Müsait' ? 'bg-success/15 text-success' : 'bg-error/15 text-error'}`}>
-                    {book.status}
+                <div className="bg-secondary-container text-on-secondary-container px-sm py-1 rounded-full text-[10px] font-bold uppercase tracking-wider">
+                    {device.status}
                 </div>
             </div>
             
             <div className="bg-white p-2 rounded-lg border border-outline-variant mb-md">
-              <QRCodeSVG value={`${baseUrl}/${book.id}`} size={140} />
+              <QRCodeSVG value={`${baseUrl}/${device.id}`} size={140} />
             </div>
             
-            <Link to={`/book/${book.id}`} className="w-full mt-auto flex justify-center items-center gap-xs border border-primary text-primary hover:bg-primary-container/10 px-md py-sm rounded-lg font-label-md text-label-md transition-colors">
+            <Link to={`/device/${device.id}`} className="w-full mt-auto flex justify-center items-center gap-xs border border-primary text-primary hover:bg-primary-container/10 px-md py-sm rounded-lg font-label-md text-label-md transition-colors">
               <span className="material-symbols-outlined text-[18px]">visibility</span>
-              Kitap Bilgilerini Aç
+              Paneli Aç
             </Link>
           </div>
         ))}
-        {books.length === 0 && (
+        {devices.length === 0 && (
             <div className="col-span-full py-xl text-center text-on-surface-variant bg-surface-container border border-dashed border-outline rounded-xl">
                 <span className="material-symbols-outlined text-4xl mb-sm block opacity-50">qr_code_2</span>
-                <p>Henüz kayıtlı kitap bulunmuyor. Test için "Yeni Test Kitabı Üret" butonuna tıklayın.</p>
+                <p>Henüz kayıtlı cihaz bulunmuyor. Test için "Yeni Test Cihazı Üret" butonuna tıklayın.</p>
             </div>
         )}
       </div>

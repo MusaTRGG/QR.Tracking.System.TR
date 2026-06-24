@@ -6,31 +6,37 @@ import { supabaseService } from '../supabaseService';
 export default function DeviceDashboard() {
   const { id } = useParams();
   const { user } = useAuth();
-  const [book, setBook] = useState(null);
-  const [loading, setLoading] = useState(true);
-  
-  // Modals state
-  const [isBorrowModalOpen, setBorrowModalOpen] = useState(false);
+  const [device, setDevice] = useState(null);
+  const [activeTab, setActiveTab] = useState('history'); // 'history' or 'maintenance'
+  const [isIssueModalOpen, setIssueModalOpen] = useState(false);
+  const [isMaintenanceModalOpen, setMaintenanceModalOpen] = useState(false);
   const [isEditModalOpen, setEditModalOpen] = useState(false);
 
-  // Edit Book Form State
-  const [editTitle, setEditTitle] = useState('');
-  const [editAuthor, setEditAuthor] = useState('');
+  // Edit Cihaz Form State
+  const [editName, setEditName] = useState('');
+  const [editSerial, setEditSerial] = useState('');
   const [editLocation, setEditLocation] = useState('');
-  const [editSummary, setEditSummary] = useState('');
+  const [editSpecs, setEditSpecs] = useState('');
   const [editImage, setEditImage] = useState('');
 
-  // Borrow Form State
-  const [borrowerName, setBorrowerName] = useState('');
-  const [borrowDays, setBorrowDays] = useState(14);
+  // Hızlı İşlemler Form State
+  const [issueType, setIssueType] = useState('Donanımsal Hata');
+  const [issueDesc, setIssueDesc] = useState('');
+  const [maintType, setMaintType] = useState('Periyodik Bakım');
+  const [maintDesc, setMaintDesc] = useState('');
 
-  const fetchBook = async () => {
+  // Minimal dummy PDF base64
+  const dummyPdf = "data:application/pdf;base64,JVBERi0xLjEKJcKlwrHDqwoKMSAwIG9iagogIDw8IC9UeXBlIC9DYXRhbG9nCiAgICAgL1BhZ2VzIDIgMCBSCiAgPj4KZW5kb2JqCgoyIDAgb2JqCiAgPDwgL1R5cGUgL1BhZ2VzCiAgICAgL0tpZHMgWzMgMCBSXQogICAgIC9Db3VudCAxCiAgICAgL01lZGlhQm94IFswIDAgMzAwIDE0UF0KICA+PgplbmRvYmoKCjMgMCBvYmoKICA8PCAgL1R5cGUgL1BhZ2UKICAgICAgL1BhcmVudCAyIDAgUgogICAgICAvUmVzb3VyY2VzCiAgICAgICA8PCAvRm9udAogICAgICAgICAgIDw8IC9GMQogICAgICAgICAgICAgICA8PCAvVHlwZSAvRm9udAogICAgICAgICAgICAgICAgICAvU3VidHlwZSAvVHlwZTEKICAgICAgICAgICAgICAgICAgL0Jhc2VGb250IC9UaW1lcy1Sb21hbgogICAgICAgICAgICAgICA+PgogICAgICAgICAgID4+CiAgICAgICA+PgogICAgICAvQ29udGVudHMgNCAwIFIKICA+PgplbmRvYmoKCjQgMCBvYmoKICA8PCAvTGVuZ3RoIDU1ID4+CnN0cmVhbQogIEJUCiAgICAvRjEgMTggVGYKICAgIDAgMCAwIHJnCiAgICAoVGVzdCBEb2N1bWVudCkgVGoKICBFVAplbmRzdHJlYW0KZW5kb2JqCgp4cmVmCjAgNQowMDAwMDAwMDAwIDY1NTM1IGYgCjAwMDAwMDAwMTggMDAwMDAgbiAKMDAwMDAwMDA3NyAwMDAwMCBuIAowMDAwMDAwMTgzIDAwMDAwIG4gCjAwMDAwMDA0NTcgMDAwMDAgbiAKdHJhaWxlcgogIDw8ICAvUm9vdCAxIDAgUgogICAgICAvU2l6ZSA1CiAgPj4Kc3RhcnR4cmVmCjU2NQolJUVPRgo=";
+
+  const [loading, setLoading] = useState(true);
+
+  const fetchDevice = async () => {
     setLoading(true);
     let success = false;
     let data = null;
 
     try {
-      const response = await fetch(`/api/books/${id}`);
+      const response = await fetch(`/api/devices/${id}`);
       if (response.ok) {
         data = await response.json();
         success = true;
@@ -40,7 +46,7 @@ export default function DeviceDashboard() {
     }
 
     if (!success && supabaseService.isConfigured()) {
-      const cloudData = await supabaseService.getBookById(id);
+      const cloudData = await supabaseService.getDeviceById(id);
       if (cloudData) {
         data = cloudData;
         success = true;
@@ -48,21 +54,21 @@ export default function DeviceDashboard() {
     }
 
     if (success && data) {
-      setBook(data);
-      setEditTitle(data.title || '');
-      setEditAuthor(data.author || '');
+      setDevice(data);
+      setEditName(data.name || '');
+      setEditSerial(data.serial || '');
       setEditLocation(data.location || '');
-      setEditSummary(data.summary || '');
+      setEditSpecs(data.specs || '');
       setEditImage(data.image || '');
       
       // Sync back to localStorage
-      const saved = localStorage.getItem('qr-books');
+      const saved = localStorage.getItem('qr-devices');
       if (saved) {
-        const books = JSON.parse(saved);
-        const foundIdx = books.findIndex(b => b.id === id);
+        const devices = JSON.parse(saved);
+        const foundIdx = devices.findIndex(d => d.id === id);
         if (foundIdx !== -1) {
-          books[foundIdx] = data;
-          localStorage.setItem('qr-books', JSON.stringify(books));
+          devices[foundIdx] = data;
+          localStorage.setItem('qr-devices', JSON.stringify(devices));
         }
       }
       setLoading(false);
@@ -70,16 +76,16 @@ export default function DeviceDashboard() {
     }
 
     // LocalStorage fallback
-    const saved = localStorage.getItem('qr-books');
+    const saved = localStorage.getItem('qr-devices');
     if (saved) {
-      const books = JSON.parse(saved);
-      const found = books.find(b => b.id === id);
+      const devices = JSON.parse(saved);
+      const found = devices.find(d => d.id === id);
       if (found) {
-        setBook(found);
-        setEditTitle(found.title || '');
-        setEditAuthor(found.author || '');
+        setDevice(found);
+        setEditName(found.name || '');
+        setEditSerial(found.serial || '');
         setEditLocation(found.location || '');
-        setEditSummary(found.summary || '');
+        setEditSpecs(found.specs || '');
         setEditImage(found.image || '');
       }
     }
@@ -87,39 +93,57 @@ export default function DeviceDashboard() {
   };
 
   useEffect(() => {
-    fetchBook();
+    fetchDevice();
+
+    // Fluctuating efficiency (only UI fluctuation)
+    const interval = setInterval(() => {
+      setDevice(prev => {
+        if (!prev) return prev;
+        if (prev.status === 'Arızalı') return prev;
+        const fluctuation = Math.floor(Math.random() * 5) - 2;
+        let newEff = (prev.efficiency || 98) + fluctuation;
+        if (newEff > 100) newEff = 100;
+        if (newEff < 0) newEff = 0;
+        return { ...prev, efficiency: newEff };
+      });
+    }, 8000);
+
+    return () => clearInterval(interval);
   }, [id]);
 
   if (loading) return <div className="p-xl text-center text-on-surface">Yükleniyor...</div>;
 
-  if (!book) {
+  if (!device) {
     return (
       <div className="max-w-[600px] mx-auto text-center space-y-md py-xl">
         <span className="material-symbols-outlined text-error text-5xl">error</span>
-        <h1 className="font-headline-lg text-headline-lg text-on-surface">Kitap Bulunamadı</h1>
+        <h1 className="font-headline-lg text-headline-lg text-on-surface">Cihaz Bulunamadı</h1>
         <p className="font-body-md text-body-md text-on-surface-variant">
-          Aradığınız "{id}" ID'li kitap veritabanında bulunamadı. Lütfen QR kodunun doğru olduğundan emin olun veya kitaplar sayfasından yeni bir kitap ekleyin.
+          Aradığınız "{id}" ID'li cihaz veritabanında bulunamadı. Lütfen QR kodunun doğru olduğundan emin olun veya envanter sayfasından yeni bir cihaz ekleyin.
         </p>
         <Link to="/inventory" className="inline-flex items-center justify-center bg-primary text-on-primary px-lg py-sm rounded-lg font-label-md hover:opacity-90 transition-all">
-          Kitap Envanterine Git
+          Envantere Geri Dön
         </Link>
       </div>
     );
   }
 
-  const updateBook = async (updatedFields, newLog) => {
+  const circumference = 2 * Math.PI * 56;
+  const strokeDashoffset = circumference - ((device.efficiency || 0) / 100) * circumference;
+
+  const updateDevice = async (updatedFields, newLog) => {
     let success = false;
-    let finalBookState = null;
+    let finalDeviceState = null;
     try {
       let response;
       if (newLog) {
-        response = await fetch(`/api/books/${id}/logs`, {
+        response = await fetch(`/api/devices/${id}/logs`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ log: newLog })
         });
       } else {
-        response = await fetch(`/api/books/${id}`, {
+        response = await fetch(`/api/devices/${id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(updatedFields)
@@ -128,8 +152,8 @@ export default function DeviceDashboard() {
       
       if (response.ok) {
         const data = await response.json();
-        setBook(data);
-        finalBookState = data;
+        setDevice(data);
+        finalDeviceState = data;
         success = true;
       }
     } catch (e) {
@@ -137,132 +161,129 @@ export default function DeviceDashboard() {
     }
 
     if (!success && supabaseService.isConfigured()) {
-      const currentBook = await supabaseService.getBookById(id);
-      if (currentBook) {
-        let updatedBookFields = { ...updatedFields };
+      const currentDev = await supabaseService.getDeviceById(id);
+      if (currentDev) {
+        let updatedDevFields = { ...updatedFields };
         if (newLog) {
-          let updatedStatus = currentBook.status;
-          let updatedIsInLibrary = currentBook.is_in_library;
-          let updatedBorrowedBy = currentBook.borrowed_by;
-          let updatedBorrowedDate = currentBook.borrowed_date;
-          let updatedDaysToReturn = currentBook.days_to_return;
+          let updatedEfficiency = currentDev.efficiency;
+          let updatedStatus = currentDev.status;
+          let updatedLastMaintenance = currentDev.lastMaintenance;
           
-          if (newLog.type === 'Ödünç Alma') {
-            updatedStatus = 'Ödünç Verildi';
-            updatedIsInLibrary = false;
-            updatedBorrowedBy = newLog.user;
-            updatedBorrowedDate = newLog.date.split(' ')[0] || new Date().toLocaleDateString('tr-TR');
-            updatedDaysToReturn = newLog.daysToReturn || 14;
-          } else if (newLog.type === 'İade Etme') {
-            updatedStatus = 'Müsait';
-            updatedIsInLibrary = true;
-            updatedBorrowedBy = null;
-            updatedBorrowedDate = null;
-            updatedDaysToReturn = null;
+          if (newLog.type === 'Arıza Bildirimi') {
+            updatedStatus = 'Arızalı';
+            updatedEfficiency = Math.floor(Math.random() * 20 + 30);
+          } else if (newLog.type === 'Bakım') {
+            updatedStatus = 'Operasyonel';
+            updatedEfficiency = 100;
+            updatedLastMaintenance = newLog.date.split(' ')[0] || new Date().toLocaleDateString('tr-TR');
+          } else if (newLog.type === 'Durum Güncelleme') {
+            updatedStatus = 'Operasyonel';
+            updatedEfficiency = 100;
           }
           
-          updatedBookFields = {
-            ...updatedBookFields,
+          updatedDevFields = {
+            ...updatedDevFields,
             status: updatedStatus,
-            is_in_library: updatedIsInLibrary,
-            borrowed_by: updatedBorrowedBy,
-            borrowed_date: updatedBorrowedDate,
-            days_to_return: updatedDaysToReturn,
-            logs: [newLog, ...(currentBook.logs || [])]
+            efficiency: updatedEfficiency,
+            lastMaintenance: updatedLastMaintenance,
+            logs: [newLog, ...(currentDev.logs || [])]
           };
         }
         
-        const updated = await supabaseService.updateBook(id, updatedBookFields);
+        const updated = await supabaseService.updateDevice(id, updatedDevFields);
         if (updated) {
-          setBook(updated);
-          finalBookState = updated;
+          setDevice(updated);
+          finalDeviceState = updated;
           success = true;
         }
       }
     }
 
     // Sync to localStorage as fallback
-    const saved = localStorage.getItem('qr-books');
+    const saved = localStorage.getItem('qr-devices');
     if (saved) {
-      const books = JSON.parse(saved);
-      const foundIdx = books.findIndex(b => b.id === id);
+      const devices = JSON.parse(saved);
+      const foundIdx = devices.findIndex(d => d.id === id);
       if (foundIdx !== -1) {
-        if (success && finalBookState) {
-          books[foundIdx] = finalBookState;
+        if (success && finalDeviceState) {
+          devices[foundIdx] = finalDeviceState;
         } else {
-          const currentBook = books[foundIdx];
-          let updatedDev = { ...currentBook, ...updatedFields };
+          const currentDev = devices[foundIdx];
+          let updatedDev = { ...currentDev, ...updatedFields };
           if (newLog) {
-            let updatedStatus = currentBook.status;
-            let updatedIsInLibrary = currentBook.is_in_library;
-            let updatedBorrowedBy = currentBook.borrowed_by;
-            let updatedBorrowedDate = currentBook.borrowed_date;
-            let updatedDaysToReturn = currentBook.days_to_return;
+            let updatedEfficiency = currentDev.efficiency;
+            let updatedStatus = currentDev.status;
+            let updatedLastMaintenance = currentDev.lastMaintenance;
             
-            if (newLog.type === 'Ödünç Alma') {
-              updatedStatus = 'Ödünç Verildi';
-              updatedIsInLibrary = false;
-              updatedBorrowedBy = newLog.user;
-              updatedBorrowedDate = newLog.date.split(' ')[0] || new Date().toLocaleDateString('tr-TR');
-              updatedDaysToReturn = newLog.daysToReturn || 14;
-            } else if (newLog.type === 'İade Etme') {
-              updatedStatus = 'Müsait';
-              updatedIsInLibrary = true;
-              updatedBorrowedBy = null;
-              updatedBorrowedDate = null;
-              updatedDaysToReturn = null;
+            if (newLog.type === 'Arıza Bildirimi') {
+              updatedStatus = 'Arızalı';
+              updatedEfficiency = Math.floor(Math.random() * 20 + 30);
+            } else if (newLog.type === 'Bakım') {
+              updatedStatus = 'Operasyonel';
+              updatedEfficiency = 100;
+              updatedLastMaintenance = newLog.date.split(' ')[0] || new Date().toLocaleDateString('tr-TR');
+            } else if (newLog.type === 'Durum Güncelleme') {
+              updatedStatus = 'Operasyonel';
+              updatedEfficiency = 100;
             }
             
             updatedDev = {
-              ...currentBook,
+              ...currentDev,
               ...updatedFields,
               status: updatedStatus,
-              is_in_library: updatedIsInLibrary,
-              borrowed_by: updatedBorrowedBy,
-              borrowed_date: updatedBorrowedDate,
-              days_to_return: updatedDaysToReturn,
-              logs: [newLog, ...(currentBook.logs || [])]
+              efficiency: updatedEfficiency,
+              lastMaintenance: updatedLastMaintenance,
+              logs: [newLog, ...(currentDev.logs || [])]
             };
           }
-          books[foundIdx] = updatedDev;
+          devices[foundIdx] = updatedDev;
           if (!success) {
-            setBook(updatedDev);
+            setDevice(updatedDev);
           }
         }
-        localStorage.setItem('qr-books', JSON.stringify(books));
+        localStorage.setItem('qr-devices', JSON.stringify(devices));
       }
     }
   };
 
-  const handleBorrowSubmit = (e) => {
-    e.preventDefault();
-    if (!borrowerName.trim()) return;
-
+  const handleStatusUpdate = () => {
     const newLog = {
       date: new Date().toLocaleString('tr-TR'),
-      type: 'Ödünç Alma',
-      description: `${borrowerName} isimli üyeye ${borrowDays} günlüğüne ödünç verildi.`,
-      user: borrowerName,
-      daysToReturn: parseInt(borrowDays)
+      type: 'Durum Güncelleme',
+      description: 'Durum: Operasyonel, Verim: %100',
+      user: user?.name || 'Ahmet Y.'
     };
-
-    updateBook({}, newLog);
-    setBorrowModalOpen(false);
-    setBorrowerName('');
-    alert('Kitap başarıyla ödünç verildi.');
+    updateDevice({ status: 'Operasyonel', efficiency: 100 }, newLog);
+    alert('Cihaz verimi başarıyla kalibre edildi.');
   };
 
-  const handleReturnSubmit = () => {
-    if (window.confirm("Bu kitabın kütüphaneye iade edildiğini onaylıyor musunuz?")) {
-      const newLog = {
-        date: new Date().toLocaleString('tr-TR'),
-        type: 'İade Etme',
-        description: 'Kitap kütüphaneye teslim edildi, rafa yerleştirildi.',
-        user: user?.name || 'Kütüphane Görevlisi'
-      };
-      updateBook({}, newLog);
-      alert('Kitap başarıyla iade alındı.');
-    }
+  const handleIssueSubmit = (e) => {
+    e.preventDefault();
+    const newLog = {
+      date: new Date().toLocaleString('tr-TR'),
+      type: 'Arıza Bildirimi',
+      description: `Tür: ${issueType} - Açıklama: ${issueDesc}`,
+      user: user?.name || 'Ahmet Y.'
+    };
+    updateDevice({ status: 'Arızalı' }, newLog);
+    setIssueModalOpen(false);
+    setIssueDesc('');
+    alert('Arıza kaydı başarıyla oluşturuldu.');
+  };
+
+  const handleMaintenanceSubmit = (e) => {
+    e.preventDefault();
+    const newLog = {
+      date: new Date().toLocaleString('tr-TR'),
+      type: 'Bakım',
+      description: `Yapılan İşlemler: ${maintDesc}`,
+      maintenanceType: maintType,
+      user: user?.name || 'Mehmet K.'
+    };
+    updateDevice({ status: 'Operasyonel', efficiency: 100, lastMaintenance: new Date().toLocaleDateString('tr-TR') }, newLog);
+    setMaintenanceModalOpen(false);
+    setMaintDesc('');
+    alert('Bakım kaydı başarıyla oluşturuldu.');
   };
 
   const handleEditImageChange = (e) => {
@@ -281,27 +302,27 @@ export default function DeviceDashboard() {
     const newLog = {
       date: new Date().toLocaleString('tr-TR'),
       type: 'Bilgi Güncelleme',
-      description: 'Kitap bilgileri ve kapak görseli güncellendi.',
-      user: user?.name || 'Kütüphane Görevlisi'
+      description: 'Cihaz bilgileri ve görseli kullanıcı tarafından güncellendi.',
+      user: user?.name || 'Yönetici'
     };
     const updatedFields = {
-      title: editTitle,
-      author: editAuthor,
+      name: editName,
+      serial: editSerial,
       location: editLocation,
-      summary: editSummary,
+      specs: editSpecs,
       image: editImage,
-      logs: [newLog, ...(book.logs || [])]
+      logs: [newLog, ...(device.logs || [])]
     };
-    updateBook(updatedFields);
+    updateDevice(updatedFields); // Note: Call without newLog to trigger a PUT update
     setEditModalOpen(false);
-    alert('Kitap bilgileri başarıyla güncellendi.');
+    alert('Cihaz bilgileri başarıyla güncellendi.');
   };
 
-  const handleDeleteBook = async () => {
-    if (window.confirm("Bu kitabı envanterden kalıcı olarak silmek istediğinize emin misiniz?")) {
+  const handleDeleteDevice = async () => {
+    if (window.confirm("Bu cihazı envanterden kalıcı olarak silmek istediğinize emin misiniz?")) {
       let success = false;
       try {
-        const response = await fetch(`/api/books/${id}`, {
+        const response = await fetch(`/api/devices/${id}`, {
           method: 'DELETE'
         });
         if (response.ok) {
@@ -312,282 +333,410 @@ export default function DeviceDashboard() {
       }
 
       if (!success && supabaseService.isConfigured()) {
-        const deleted = await supabaseService.deleteBook(id);
+        const deleted = await supabaseService.deleteDevice(id);
         if (deleted) {
           success = true;
         }
       }
 
       // Sync with localStorage
-      const saved = localStorage.getItem('qr-books');
+      const saved = localStorage.getItem('qr-devices');
       if (saved) {
-        const books = JSON.parse(saved);
-        const filtered = books.filter(b => b.id !== id);
-        localStorage.setItem('qr-books', JSON.stringify(filtered));
+        const devices = JSON.parse(saved);
+        const filtered = devices.filter(d => d.id !== id);
+        localStorage.setItem('qr-devices', JSON.stringify(filtered));
       }
 
-      alert("Kitap envanterden silindi.");
+      alert("Cihaz envanterden silindi.");
       window.location.href = '/inventory';
     }
   };
 
+  // Filter logs based on active tab
+  const filteredLogs = activeTab === 'history' 
+    ? (device.logs || []) 
+    : (device.logs || []).filter(log => log.type === 'Bakım');
+
   return (
-    <div className="max-w-[1200px] mx-auto text-on-surface">
+    <div>
       {/* Header Section */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-md mb-lg border-b border-outline-variant pb-md">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-md mb-lg">
         <div>
           <div className="flex items-center gap-sm">
-            <span className="material-symbols-outlined text-primary text-3xl">menu_book</span>
-            <h1 className="font-headline-xl text-headline-xl">{book.title}</h1>
+            <h1 className="font-headline-xl text-headline-xl text-on-surface">{device.name}</h1>
             <button 
               onClick={() => setEditModalOpen(true)}
-              className="text-on-surface-variant hover:text-primary p-xs rounded-full hover:bg-surface-container-high transition-colors flex items-center justify-center cursor-pointer"
-              title="Kitap Bilgilerini Düzenle"
+              className="text-on-surface-variant hover:text-primary p-xs rounded-full hover:bg-surface-container-high transition-colors flex items-center justify-center"
+              title="Cihaz Bilgilerini Düzenle"
             >
               <span className="material-symbols-outlined text-[24px]">edit</span>
             </button>
             <button 
-              onClick={handleDeleteBook}
-              className="text-on-surface-variant hover:text-error p-xs rounded-full hover:bg-surface-container-high transition-colors flex items-center justify-center cursor-pointer"
-              title="Kitabı Sil"
+              onClick={handleDeleteDevice}
+              className="text-on-surface-variant hover:text-error p-xs rounded-full hover:bg-surface-container-high transition-colors flex items-center justify-center"
+              title="Cihazı Sil"
             >
               <span className="material-symbols-outlined text-[24px]">delete</span>
             </button>
           </div>
-          <p className="font-body-md text-body-md text-on-surface-variant mt-1">Yazar: {book.author} | ISBN/ID: {book.id}</p>
+          <p className="font-body-md text-body-md text-on-surface-variant mt-1">ID: {device.id}</p>
+        </div>
+        <div className="flex items-center bg-secondary-container text-on-secondary-container px-md py-xs rounded-full gap-xs w-fit">
+          <span className={`w-2 h-2 rounded-full ${device.status === 'Operasyonel' ? 'bg-secondary' : device.status === 'Bakımda' ? 'bg-tertiary' : 'bg-error'}`}></span>
+          <span className="font-label-md text-label-md">{device.status}</span>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-grid-gutter">
-        {/* Left Side: Book Cover & Main Info */}
-        <div className="lg:col-span-1 space-y-md">
-          <div className="bg-surface-container-lowest border border-outline-variant p-md rounded-xl shadow-sm flex flex-col items-center">
-            {book.image ? (
-              <img src={book.image} alt={book.title} className="w-full max-w-[200px] object-contain rounded border border-outline bg-white shadow-md mb-md" />
+      {/* Bento Grid Layout */}
+      <div className="grid grid-cols-12 gap-grid-gutter">
+        
+        {/* Product Photo Card */}
+        <div className="col-span-12 lg:col-span-4 bg-surface-container-lowest border border-outline-variant rounded-xl p-lg flex flex-col items-center justify-center shadow-sm">
+          <div className="w-full aspect-square relative mb-md bg-white rounded-lg flex items-center justify-center overflow-hidden border border-outline-variant">
+            {device.image ? (
+              <img 
+                className="object-contain max-h-[280px] w-full h-full" 
+                alt={device.name} 
+                src={device.image} 
+              />
             ) : (
-              <div className="w-full max-w-[200px] aspect-[3/4] flex flex-col items-center justify-center rounded border border-outline bg-surface-container-low text-on-surface-variant mb-md shadow-inner">
-                <span className="material-symbols-outlined text-6xl mb-xs">menu_book</span>
-                <span className="text-sm font-bold">KAPAK FOTOĞRAFI</span>
-              </div>
-            )}
-            
-            <div className="w-full text-center space-y-sm">
-              <span className={`inline-block px-md py-xs rounded-full font-bold text-label-md uppercase tracking-wider ${book.status === 'Müsait' ? 'bg-success/15 text-success' : 'bg-error/15 text-error'}`}>
-                {book.status}
-              </span>
-              <p className="text-body-sm text-on-surface-variant">Konum: <span className="font-semibold">{book.location}</span></p>
-            </div>
-          </div>
-
-          {/* Action Card */}
-          <div className="bg-surface-container-lowest border border-outline-variant p-md rounded-xl shadow-sm space-y-md">
-            <h3 className="font-headline-md text-headline-md border-b border-surface-container pb-xs">Durum İşlemleri</h3>
-            
-            {book.status === 'Müsait' ? (
-              <div className="space-y-xs">
-                <p className="text-body-sm text-on-surface-variant">Kitap kütüphanede ve ödünç verilmeye hazır durumda.</p>
-                <button 
-                  onClick={() => setBorrowModalOpen(true)}
-                  className="w-full bg-primary text-on-primary hover:opacity-90 px-md py-sm rounded-lg font-label-md text-label-md transition-colors flex items-center justify-center gap-xs cursor-pointer shadow"
-                >
-                  <span className="material-symbols-outlined text-[18px]">assignment_turned_in</span>
-                  Kitabı Ödünç Ver
-                </button>
-              </div>
-            ) : (
-              <div className="space-y-sm">
-                <div className="p-sm bg-error/15 text-error border border-error/20 rounded-lg space-y-xs">
-                  <p className="text-label-md font-bold">Ödünç Alındı</p>
-                  <p className="text-body-sm">Ödünç Alan: <span className="font-semibold">{book.borrowed_by}</span></p>
-                  <p className="text-body-sm">Alma Tarihi: <span className="font-semibold">{book.borrowed_date}</span></p>
-                  <p className={`text-body-sm font-bold flex items-center gap-xs ${book.days_to_return <= 3 ? 'text-error animate-pulse' : 'text-on-surface-variant'}`}>
-                    <span className="material-symbols-outlined text-[16px]">alarm</span>
-                    Geri Teslim Süresi: {book.days_to_return} Gün
-                  </p>
-                </div>
-                <button 
-                  onClick={handleReturnSubmit}
-                  className="w-full bg-success text-on-success hover:opacity-90 px-md py-sm rounded-lg font-label-md text-label-md transition-colors flex items-center justify-center gap-xs cursor-pointer shadow"
-                >
-                  <span className="material-symbols-outlined text-[18px]">keyboard_return</span>
-                  Kitabı İade Al
-                </button>
+              <div className="flex flex-col items-center justify-center text-on-surface-variant gap-sm">
+                <span className="material-symbols-outlined text-[80px] opacity-40">developer_board</span>
+                <span className="font-label-md text-label-md">Görsel Eklenmemiş</span>
               </div>
             )}
           </div>
+          <a href={dummyPdf} download={`${device.id}_dokuman.pdf`} className="w-full flex items-center justify-center gap-sm border border-primary text-primary hover:bg-primary-container/10 px-md py-sm rounded-lg font-label-md text-label-md transition-colors">
+            <span className="material-symbols-outlined">download</span>
+            Teknik Dokümanı İndir
+          </a>
         </div>
 
-        {/* Right Side: Book Details & Logs */}
-        <div className="lg:col-span-2 space-y-md">
-          {/* Summary / About */}
-          <div className="bg-surface-container-lowest border border-outline-variant p-md rounded-xl shadow-sm space-y-xs">
-            <h3 className="font-headline-md text-headline-md border-b border-surface-container pb-xs">Kitap Özeti</h3>
-            <p className="font-body-md text-body-md text-on-surface-variant leading-relaxed">
-              {book.summary || 'Bu kitap için henüz bir özet eklenmemiş.'}
-            </p>
+        {/* Stats & Info Grid */}
+        <div className="col-span-12 lg:col-span-8 grid grid-cols-1 md:grid-cols-2 gap-grid-gutter">
+          
+          {/* General Info Card */}
+          <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-lg shadow-sm flex flex-col justify-between">
+            <div>
+              <h3 className="font-headline-md text-headline-md mb-md border-b border-outline-variant pb-sm">Genel Bilgi</h3>
+              <div className="space-y-md">
+                <div className="flex justify-between items-center py-xs border-b border-surface-container-low">
+                  <span className="text-on-surface-variant font-label-md text-label-md">Cihaz Adı:</span>
+                  <span className="text-on-surface font-body-md text-body-md">{device.name}</span>
+                </div>
+                <div className="flex justify-between items-center py-xs border-b border-surface-container-low">
+                  <span className="text-on-surface-variant font-label-md text-label-md">Seri No:</span>
+                  <span className="text-on-surface font-body-md text-body-md">{device.serial}</span>
+                </div>
+                <div className="flex justify-between items-center py-xs border-b border-surface-container-low">
+                  <span className="text-on-surface-variant font-label-md text-label-md">Konum:</span>
+                  <span className="text-on-surface font-body-md text-body-md">{device.location}</span>
+                </div>
+                <div className="flex justify-between items-center py-xs">
+                  <span className="text-on-surface-variant font-label-md text-label-md">Son Bakım:</span>
+                  <span className="text-on-surface font-body-md text-body-md">{device.lastMaintenance}</span>
+                </div>
+              </div>
+            </div>
+            {device.specs && (
+              <div className="mt-lg pt-md border-t border-outline-variant">
+                <h4 className="font-label-md text-label-md text-on-surface-variant uppercase mb-xs tracking-wider">Teknik Özellikler</h4>
+                <p className="text-body-md text-on-surface bg-surface-container-low p-sm rounded-lg whitespace-pre-wrap font-mono text-[13px]">{device.specs}</p>
+              </div>
+            )}
           </div>
 
-          {/* History Logs */}
-          <div className="bg-surface-container-lowest border border-outline-variant p-md rounded-xl shadow-sm space-y-md">
-            <h3 className="font-headline-md text-headline-md border-b border-surface-container pb-xs">Kitap Hareket Geçmişi</h3>
-            
-            <div className="relative border-l-2 border-outline-variant pl-lg ml-md space-y-md py-sm">
-              {(book.logs || []).map((log, index) => (
-                <div key={index} className="relative">
-                  {/* Timeline icon */}
-                  <span className={`absolute -left-[32px] top-1 w-6 h-6 rounded-full flex items-center justify-center border-2 border-surface ${log.type === 'Ödünç Alma' ? 'bg-error text-white' : log.type === 'İade Etme' ? 'bg-success text-white' : 'bg-surface-container-high text-on-surface-variant'}`}>
-                    <span className="material-symbols-outlined text-[14px]">
-                      {log.type === 'Ödünç Alma' ? 'assignment_ind' : log.type === 'İade Etme' ? 'keyboard_return' : 'info'}
-                    </span>
+          {/* Status Gauge Card */}
+          <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-lg shadow-sm flex flex-col">
+            <h3 className="font-headline-md text-headline-md mb-md">Durum Değişkenleri</h3>
+            <div className="flex-grow flex flex-col items-center justify-center py-md relative">
+              {/* Circular Gauge Representation */}
+              <div className="relative w-32 h-32 flex items-center justify-center">
+                <svg className="w-full h-full transform -rotate-90 transition-all duration-1000 ease-in-out">
+                  <circle className="text-surface-container-highest" cx="64" cy="64" fill="transparent" r="56" stroke="currentColor" strokeWidth="8"></circle>
+                  <circle 
+                    className={`${device.efficiency < 70 ? 'text-error' : device.status === 'Arızalı' ? 'text-error' : 'text-secondary'} transition-all duration-1000 ease-in-out`} 
+                    cx="64" cy="64" fill="transparent" r="56" stroke="currentColor" 
+                    strokeDasharray={circumference} 
+                    strokeDashoffset={strokeDashoffset} 
+                    strokeWidth="8"
+                    strokeLinecap="round"
+                  ></circle>
+                </svg>
+                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                  <span className={`font-headline-lg text-headline-lg ${device.efficiency < 70 ? 'text-error' : device.status === 'Arızalı' ? 'text-error' : 'text-secondary'} transition-colors duration-1000`}>
+                    {device.efficiency}%
                   </span>
-                  <div>
-                    <span className="font-label-md text-label-md text-on-surface block">{log.type}</span>
-                    <p className="text-body-md text-on-surface-variant mt-xs">{log.description}</p>
-                    <p className="text-[10px] text-outline mt-xs">{log.date} • İşlemi Yapan: {log.user}</p>
-                  </div>
+                  <span className="font-label-sm text-label-sm text-on-surface-variant uppercase">Verim</span>
                 </div>
-              ))}
-              {(book.logs || []).length === 0 && (
-                <p className="text-body-sm text-on-surface-variant">Henüz bir hareket kaydı bulunmuyor.</p>
-              )}
+              </div>
+              <p className="text-body-sm font-body-sm text-on-surface-variant mt-sm animate-pulse">Canlı Veri</p>
             </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Borrow Book Modal */}
-      {isBorrowModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-md">
-          <div className="bg-surface border border-outline-variant rounded-xl w-full max-w-[450px] overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-200 text-on-surface">
-            <div className="bg-primary text-on-primary px-lg py-md flex justify-between items-center">
-              <h3 className="font-headline-md text-headline-md flex items-center gap-sm">
-                <span className="material-symbols-outlined">assignment_ind</span> Kitabı Ödünç Ver
-              </h3>
-              <button onClick={() => setBorrowModalOpen(false)} className="hover:opacity-70 flex items-center justify-center">
-                <span className="material-symbols-outlined">close</span>
+            <div className="mt-auto grid grid-cols-1 gap-sm pt-md">
+              <button onClick={handleStatusUpdate} className="bg-primary text-on-primary hover:opacity-90 px-md py-sm rounded-lg font-label-md text-label-md flex items-center justify-center gap-sm transition-opacity">
+                <span className="material-symbols-outlined">sync</span>
+                DURUMU KALİBRE ET
               </button>
             </div>
-            <form className="p-lg space-y-md" onSubmit={handleBorrowSubmit}>
-              <div>
-                <label className="block font-label-sm text-on-surface-variant mb-xs">Ödünç Alan Üyenin Adı Soyadı</label>
-                <input 
-                  type="text" 
-                  required
-                  placeholder="Üye adını yazın"
-                  value={borrowerName}
-                  onChange={(e) => setBorrowerName(e.target.value)}
-                  className="w-full p-sm border border-outline-variant rounded-lg bg-surface focus:ring-2 focus:ring-primary outline-none text-body-md text-on-surface"
-                />
-              </div>
-
-              <div>
-                <label className="block font-label-sm text-on-surface-variant mb-xs">Ödünç Verme Süresi (Gün)</label>
-                <input 
-                  type="number" 
-                  required
-                  min="1"
-                  max="90"
-                  value={borrowDays}
-                  onChange={(e) => setBorrowDays(e.target.value)}
-                  className="w-full p-sm border border-outline-variant rounded-lg bg-surface focus:ring-2 focus:ring-primary outline-none text-body-md text-on-surface"
-                />
-              </div>
-
-              <div className="flex justify-end gap-sm pt-sm border-t border-surface-container-highest">
-                <button type="button" onClick={() => setBorrowModalOpen(false)} className="px-md py-sm font-label-md text-on-surface-variant hover:bg-surface-container rounded-lg">İptal</button>
-                <button type="submit" className="bg-primary text-on-primary px-md py-sm rounded-lg font-label-md hover:bg-primary-container hover:text-on-primary-container transition-colors cursor-pointer shadow">Kitabı Teslim Et</button>
-              </div>
-            </form>
           </div>
+
+          {/* Fast Actions Card */}
+          <div className="md:col-span-2 bg-surface-container-lowest border border-outline-variant rounded-xl p-lg shadow-sm">
+            <h3 className="font-label-md text-label-md text-on-surface-variant uppercase mb-md tracking-wider">Hızlı İşlemler</h3>
+            <div className="flex flex-wrap gap-md">
+              <button onClick={() => setIssueModalOpen(true)} className="flex-1 min-w-[200px] flex items-center justify-center gap-md border border-error text-error hover:bg-error-container/20 px-md py-sm rounded-lg font-label-md text-label-md transition-colors">
+                <span className="material-symbols-outlined">report_problem</span>
+                Arıza Bildir
+              </button>
+              <button onClick={() => setMaintenanceModalOpen(true)} className="flex-1 min-w-[200px] flex items-center justify-center gap-md border border-primary text-primary hover:bg-primary-container/10 px-md py-sm rounded-lg font-label-md text-label-md transition-colors">
+                <span className="material-symbols-outlined">engineering</span>
+                Bakım Kaydı Oluştur
+              </button>
+            </div>
+          </div>
+
+        </div>
+
+        {/* Tabbed Table Section */}
+        <div className="col-span-12 bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden shadow-sm">
+          <div className="flex border-b border-outline-variant bg-surface-container-low">
+            <button 
+              onClick={() => setActiveTab('history')}
+              className={`px-lg py-md font-label-md text-label-md transition-colors border-b-2 ${activeTab === 'history' ? 'text-primary border-primary font-bold' : 'text-on-surface-variant hover:bg-surface-container border-transparent'}`}
+            >
+              Geçmiş Kayıtlar
+            </button>
+            <button 
+              onClick={() => setActiveTab('maintenance')}
+              className={`px-lg py-md font-label-md text-label-md transition-colors border-b-2 ${activeTab === 'maintenance' ? 'text-primary border-primary font-bold' : 'text-on-surface-variant hover:bg-surface-container border-transparent'}`}
+            >
+              Bakım Detayları
+            </button>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead className="bg-surface-container-low border-b border-outline-variant">
+                <tr>
+                  <th className="px-lg py-md font-label-sm text-label-sm text-on-surface-variant uppercase">Tarih</th>
+                  <th className="px-lg py-md font-label-sm text-label-sm text-on-surface-variant uppercase">{activeTab === 'history' ? 'İşlem' : 'Bakım Türü'}</th>
+                  <th className="px-lg py-md font-label-sm text-label-sm text-on-surface-variant uppercase">Açıklama</th>
+                  <th className="px-lg py-md font-label-sm text-label-sm text-on-surface-variant uppercase text-right">Kullanıcı</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-outline-variant">
+                {filteredLogs.map((log, idx) => (
+                  <tr key={idx} className="hover:bg-surface-container-low transition-colors">
+                    <td className="px-lg py-md font-body-md text-body-md whitespace-nowrap">{log.date}</td>
+                    <td className="px-lg py-md font-body-md text-body-md whitespace-nowrap">
+                      <span className={`inline-flex items-center gap-xs px-sm py-1 rounded-full text-xs font-semibold ${
+                        log.type === 'Arıza Bildirimi' ? 'bg-error-container text-on-error-container' :
+                        log.type === 'Bakım' ? 'bg-primary-container text-on-primary-container' :
+                        log.type === 'Durum Güncelleme' ? 'bg-secondary-container text-on-secondary-container' :
+                        'bg-surface-container-highest text-on-surface'
+                      }`}>
+                        {activeTab === 'history' ? log.type : (log.maintenanceType || 'Periyodik Bakım')}
+                      </span>
+                    </td>
+                    <td className="px-lg py-md font-body-md text-body-md text-on-surface-variant">{log.description}</td>
+                    <td className="px-lg py-md font-body-md text-body-md text-right whitespace-nowrap">{log.user}</td>
+                  </tr>
+                ))}
+                {filteredLogs.length === 0 && (
+                  <tr>
+                    <td colSpan="4" className="px-lg py-xl text-center text-on-surface-variant">
+                      Kayıt bulunmuyor.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      {/* Edit Info Modal */}
+      {isEditModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-md">
+            <div className="bg-surface border border-outline-variant rounded-xl w-full max-w-[550px] overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-200 text-on-surface">
+                <div className="bg-primary text-on-primary px-lg py-md flex justify-between items-center">
+                    <h3 className="font-headline-md text-headline-md flex items-center gap-sm">
+                        <span className="material-symbols-outlined">edit</span> Cihaz Bilgilerini Düzenle
+                    </h3>
+                    <button onClick={() => setEditModalOpen(false)} className="hover:opacity-70 flex items-center justify-center">
+                        <span className="material-symbols-outlined">close</span>
+                    </button>
+                </div>
+                <form className="p-lg space-y-md" onSubmit={handleEditSubmit}>
+                    <div>
+                        <label className="block font-label-sm text-on-surface-variant mb-xs">Cihaz Adı</label>
+                        <input 
+                          type="text" 
+                          required
+                          value={editName}
+                          onChange={(e) => setEditName(e.target.value)}
+                          className="w-full p-sm border border-outline-variant rounded-lg bg-surface focus:ring-2 focus:ring-primary outline-none text-body-md text-on-surface"
+                        />
+                    </div>
+                    <div>
+                        <label className="block font-label-sm text-on-surface-variant mb-xs">Seri Numarası</label>
+                        <input 
+                          type="text" 
+                          required
+                          value={editSerial}
+                          onChange={(e) => setEditSerial(e.target.value)}
+                          className="w-full p-sm border border-outline-variant rounded-lg bg-surface focus:ring-2 focus:ring-primary outline-none text-body-md text-on-surface"
+                        />
+                    </div>
+                    <div>
+                        <label className="block font-label-sm text-on-surface-variant mb-xs">Konum (Laboratuvar)</label>
+                        <input 
+                          type="text" 
+                          required
+                          value={editLocation}
+                          onChange={(e) => setEditLocation(e.target.value)}
+                          className="w-full p-sm border border-outline-variant rounded-lg bg-surface focus:ring-2 focus:ring-primary outline-none text-body-md text-on-surface"
+                          placeholder="Örn: PLC Labı"
+                        />
+                    </div>
+                    <div>
+                        <label className="block font-label-sm text-on-surface-variant mb-xs">Cihaz Görseli (Fotoğraf)</label>
+                        <div className="flex items-center gap-sm">
+                            {editImage ? (
+                                <img src={editImage} alt="Önizleme" className="w-12 h-12 object-contain rounded border border-outline bg-white" />
+                            ) : (
+                                <div className="w-12 h-12 flex items-center justify-center rounded border border-outline bg-surface-container-low text-on-surface-variant">
+                                    <span className="material-symbols-outlined text-[24px]">image</span>
+                                </div>
+                            )}
+                            <label className="cursor-pointer bg-surface border border-outline-variant hover:bg-surface-container-high text-on-surface px-sm py-[7px] rounded-lg font-label-md text-label-md transition-colors flex items-center gap-xs">
+                                <span className="material-symbols-outlined text-[18px]">upload</span>
+                                Görsel Yükle / Değiştir
+                                <input 
+                                  type="file" 
+                                  accept="image/*" 
+                                  onChange={handleEditImageChange} 
+                                  className="hidden" 
+                                />
+                            </label>
+                            {editImage && (
+                                <button 
+                                  type="button" 
+                                  onClick={() => setEditImage('')}
+                                  className="text-error hover:bg-error-container/10 px-sm py-xs rounded font-label-sm text-label-sm transition-colors"
+                                >
+                                  Görseli Kaldır
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                    <div>
+                        <label className="block font-label-sm text-on-surface-variant mb-xs">Teknik Özellikler</label>
+                        <textarea 
+                          rows="4" 
+                          value={editSpecs}
+                          onChange={(e) => setEditSpecs(e.target.value)}
+                          className="w-full p-sm border border-outline-variant rounded-lg bg-surface focus:ring-2 focus:ring-primary outline-none text-body-md text-on-surface"
+                          placeholder="Teknik özellikleri buraya yazabilirsiniz..."
+                        ></textarea>
+                    </div>
+                    <div className="flex justify-end gap-sm pt-sm border-t border-surface-container-highest">
+                        <button type="button" onClick={() => setEditModalOpen(false)} className="px-md py-sm font-label-md text-on-surface-variant hover:bg-surface-container rounded-lg">İptal</button>
+                        <button type="submit" className="bg-primary text-on-primary px-md py-sm rounded-lg font-label-md hover:bg-primary-container hover:text-on-primary-container transition-colors">Kaydet</button>
+                    </div>
+                </form>
+            </div>
         </div>
       )}
 
-      {/* Edit Book Modal */}
-      {isEditModalOpen && (
+      {/* Issue Modal */}
+      {isIssueModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-md">
-          <div className="bg-surface border border-outline-variant rounded-xl w-full max-w-[550px] overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-200 text-on-surface max-h-[90vh] flex flex-col">
-            <div className="bg-primary text-on-primary px-lg py-md flex justify-between items-center">
-              <h3 className="font-headline-md text-headline-md flex items-center gap-sm">
-                <span className="material-symbols-outlined">edit</span> Kitap Bilgilerini Güncelle
-              </h3>
-              <button onClick={() => setEditModalOpen(false)} className="hover:opacity-75 flex items-center justify-center">
-                <span className="material-symbols-outlined">close</span>
-              </button>
-            </div>
-            
-            <form className="p-lg space-y-md overflow-y-auto flex-grow" onSubmit={handleEditSubmit}>
-              <div>
-                <label className="block font-label-sm text-on-surface-variant mb-xs">Kitap Adı</label>
-                <input 
-                  type="text" 
-                  required
-                  value={editTitle}
-                  onChange={(e) => setEditTitle(e.target.value)}
-                  className="w-full p-sm border border-outline-variant rounded-lg bg-surface focus:ring-2 focus:ring-primary outline-none text-body-md text-on-surface"
-                />
-              </div>
-
-              <div>
-                <label className="block font-label-sm text-on-surface-variant mb-xs">Yazar</label>
-                <input 
-                  type="text" 
-                  required
-                  value={editAuthor}
-                  onChange={(e) => setEditAuthor(e.target.value)}
-                  className="w-full p-sm border border-outline-variant rounded-lg bg-surface focus:ring-2 focus:ring-primary outline-none text-body-md text-on-surface"
-                />
-              </div>
-
-              <div>
-                <label className="block font-label-sm text-on-surface-variant mb-xs">Kütüphane Şubesi</label>
-                <input 
-                  type="text" 
-                  required
-                  value={editLocation}
-                  onChange={(e) => setEditLocation(e.target.value)}
-                  className="w-full p-sm border border-outline-variant rounded-lg bg-surface focus:ring-2 focus:ring-primary outline-none text-body-md text-on-surface"
-                />
-              </div>
-
-              <div>
-                <label className="block font-label-sm text-on-surface-variant mb-xs">Kapak Görseli</label>
-                <div className="flex items-center gap-sm">
-                  {editImage ? (
-                    <img src={editImage} alt="Önizleme" className="w-12 h-16 object-contain rounded border border-outline bg-white" />
-                  ) : (
-                    <div className="w-12 h-16 flex items-center justify-center rounded border border-outline bg-surface-container-low text-on-surface-variant">
-                      <span className="material-symbols-outlined text-[20px]">image</span>
-                    </div>
-                  )}
-                  <label className="cursor-pointer bg-surface border border-outline-variant hover:bg-surface-container-high text-on-surface px-sm py-[7px] rounded-lg font-label-md text-label-md transition-colors flex items-center gap-xs">
-                    <span className="material-symbols-outlined text-[18px]">upload</span>
-                    Görsel Seç
-                    <input 
-                      type="file" 
-                      accept="image/*" 
-                      onChange={handleEditImageChange} 
-                      className="hidden" 
-                    />
-                  </label>
+            <div className="bg-surface border border-outline-variant rounded-xl w-full max-w-[500px] overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-200 text-on-surface">
+                <div className="bg-error text-on-error px-lg py-md flex justify-between items-center">
+                    <h3 className="font-headline-md text-headline-md flex items-center gap-sm">
+                        <span className="material-symbols-outlined">report_problem</span> Arıza Bildir
+                    </h3>
+                    <button onClick={() => setIssueModalOpen(false)} className="hover:opacity-70 flex items-center justify-center">
+                        <span className="material-symbols-outlined">close</span>
+                    </button>
                 </div>
-              </div>
+                <form className="p-lg space-y-md" onSubmit={handleIssueSubmit}>
+                    <div>
+                        <label className="block font-label-sm text-on-surface-variant mb-xs">Arıza Türü</label>
+                        <select 
+                          value={issueType}
+                          onChange={(e) => setIssueType(e.target.value)}
+                          className="w-full p-sm border border-outline-variant rounded-lg bg-surface focus:ring-2 focus:ring-error outline-none text-body-md text-on-surface"
+                        >
+                            <option value="Donanımsal Hata">Donanımsal Hata</option>
+                            <option value="Yazılımsal Hata">Yazılımsal Hata</option>
+                            <option value="Bağlantı Sorunu">Bağlantı Sorunu</option>
+                            <option value="Diğer">Diğer</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label className="block font-label-sm text-on-surface-variant mb-xs">Açıklama</label>
+                        <textarea 
+                          required 
+                          rows="4" 
+                          value={issueDesc}
+                          onChange={(e) => setIssueDesc(e.target.value)}
+                          className="w-full p-sm border border-outline-variant rounded-lg bg-surface focus:ring-2 focus:ring-error outline-none text-body-md text-on-surface" 
+                          placeholder="Arıza detaylarını buraya yazın..."
+                        ></textarea>
+                    </div>
+                    <div className="flex justify-end gap-sm pt-sm border-t border-surface-container-highest">
+                        <button type="button" onClick={() => setIssueModalOpen(false)} className="px-md py-sm font-label-md text-on-surface-variant hover:bg-surface-container rounded-lg">İptal</button>
+                        <button type="submit" className="bg-error text-on-error px-md py-sm rounded-lg font-label-md hover:bg-error-container hover:text-on-error-container transition-colors">Gönder</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+      )}
 
-              <div>
-                <label className="block font-label-sm text-on-surface-variant mb-xs">Kitap Özeti</label>
-                <textarea 
-                  rows="4" 
-                  value={editSummary}
-                  onChange={(e) => setEditSummary(e.target.value)}
-                  className="w-full p-sm border border-outline-variant rounded-lg bg-surface focus:ring-2 focus:ring-primary outline-none text-body-md text-on-surface"
-                ></textarea>
-              </div>
-
-              <div className="flex justify-end gap-sm pt-sm border-t border-surface-container-highest">
-                <button type="button" onClick={() => setEditModalOpen(false)} className="px-md py-sm font-label-md text-on-surface-variant hover:bg-surface-container rounded-lg">İptal</button>
-                <button type="submit" className="bg-primary text-on-primary px-md py-sm rounded-lg font-label-md hover:bg-primary-container hover:text-on-primary-container transition-colors cursor-pointer shadow">Kaydet</button>
-              </div>
-            </form>
-          </div>
+      {/* Maintenance Modal */}
+      {isMaintenanceModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-md">
+            <div className="bg-surface border border-outline-variant rounded-xl w-full max-w-[500px] overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-200 text-on-surface">
+                <div className="bg-primary text-on-primary px-lg py-md flex justify-between items-center">
+                    <h3 className="font-headline-md text-headline-md flex items-center gap-sm">
+                        <span className="material-symbols-outlined">engineering</span> Bakım Kaydı Oluştur
+                    </h3>
+                    <button onClick={() => setMaintenanceModalOpen(false)} className="hover:opacity-75 flex items-center justify-center">
+                        <span className="material-symbols-outlined">close</span>
+                    </button>
+                </div>
+                <form className="p-lg space-y-md" onSubmit={handleMaintenanceSubmit}>
+                    <div>
+                        <label className="block font-label-sm text-on-surface-variant mb-xs">Bakım Türü</label>
+                        <select 
+                          value={maintType}
+                          onChange={(e) => setMaintType(e.target.value)}
+                          className="w-full p-sm border border-outline-variant rounded-lg bg-surface focus:ring-2 focus:ring-primary outline-none text-body-md text-on-surface"
+                        >
+                            <option value="Periyodik Bakım">Periyodik Bakım</option>
+                            <option value="Parça Değişimi">Parça Değişimi</option>
+                            <option value="Kalibrasyon">Kalibrasyon</option>
+                            <option value="Diğer">Diğer</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label className="block font-label-sm text-on-surface-variant mb-xs">Yapılan İşlemler</label>
+                        <textarea 
+                          required 
+                          rows="4" 
+                          value={maintDesc}
+                          onChange={(e) => setMaintDesc(e.target.value)}
+                          className="w-full p-sm border border-outline-variant rounded-lg bg-surface focus:ring-2 focus:ring-primary outline-none text-body-md text-on-surface" 
+                          placeholder="Uygulanan bakım adımlarını detaylandırın..."
+                        ></textarea>
+                    </div>
+                    <div className="flex justify-end gap-sm pt-sm border-t border-surface-container-highest">
+                        <button type="button" onClick={() => setMaintenanceModalOpen(false)} className="px-md py-sm font-label-md text-on-surface-variant hover:bg-surface-container rounded-lg">İptal</button>
+                        <button type="submit" className="bg-primary text-on-primary px-md py-sm rounded-lg font-label-md hover:bg-primary-container hover:text-on-primary-container transition-colors">Kaydet</button>
+                    </div>
+                </form>
+            </div>
         </div>
       )}
     </div>
